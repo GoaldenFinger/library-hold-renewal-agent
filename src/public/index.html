@@ -1,0 +1,3248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Agent — Conversational Search &amp; Voice Assistant</title>
+  <script src="/voice-intent.js"></script>
+  <style>
+    :root {
+      --navy: #183b56;
+      --navy-dark: #0f2638;
+      --blue: #23658a;
+      --blue-hover: #1b4f6c;
+      --blue-light: #e8f4fd;
+      --pale: #f0f4f8;
+      --border: #d9e2e8;
+      --border-light: #eef2f5;
+      --text: #263746;
+      --muted: #667785;
+      --success: #27ae60;
+      --warning: #856404;
+      --warning-bg: #fff3cd;
+      --danger: #c0392b;
+      --danger-bg: #fff3f3;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-composer: 24px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.08);
+      --shadow-composer: 0 4px 20px rgba(0, 0, 0, 0.07);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: #f7f9fa;
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Top utility bar */
+    .topbar {
+      background: var(--navy-dark);
+      color: #cbd5e1;
+      padding: 8px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+
+    .topbar a { color: #e2e8f0; }
+
+    /* Header & Navigation */
+    header {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-inner {
+      max-width: 1060px;
+      margin: auto;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      color: white;
+      background: var(--blue);
+      font-size: 22px;
+      box-shadow: 0 2px 6px rgba(35, 101, 138, 0.3);
+    }
+
+    .brand-title {
+      display: flex;
+      flex-direction: column;
+    }
+
+    h1 {
+      font-size: 19px;
+      margin: 0;
+      color: var(--navy);
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #475569;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .nav-tab:hover {
+      background: #f1f5f9;
+      color: var(--navy);
+    }
+
+    .nav-tab.active {
+      background: var(--blue-light);
+      border-color: #b8daff;
+      color: var(--navy);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1060px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px 20px 30px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .view-panel {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .view-panel.active {
+      display: flex;
+    }
+
+    /* Chat View */
+    .chat-layout {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 70vh;
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Conversation Thread */
+    .conversation-thread {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 16px 4px 24px;
+      overflow-y: auto;
+    }
+
+    /* Message Bubbles */
+    .chat-message {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: 90%;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chat-message.user-message {
+      align-self: flex-end;
+      max-width: 80%;
+    }
+
+    .user-bubble {
+      background: var(--navy);
+      color: white;
+      padding: 12px 18px;
+      border-radius: 18px 18px 4px 18px;
+      font-size: 14.5px;
+      word-break: break-word;
+      box-shadow: 0 2px 6px rgba(24, 59, 86, 0.2);
+    }
+
+    .chat-message.assistant-message {
+      align-self: flex-start;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .assistant-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px 16px 16px 4px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .assistant-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .assistant-profile {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .assistant-avatar {
+      font-size: 18px;
+    }
+
+    .assistant-name {
+      font-weight: 700;
+      color: var(--navy);
+      font-size: 13.5px;
+    }
+
+    .assistant-body {
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    /* Quick Prompts */
+    .quick-prompts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .quick-prompts-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .prompt-chip {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: var(--navy);
+      font-size: 12.5px;
+      padding: 5px 11px;
+      border-radius: 16px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+
+    .prompt-chip:hover {
+      background: var(--blue-light);
+      border-color: #93c5fd;
+      color: var(--accent-blue);
+    }
+
+    /* Unified Composer */
+    .composer-wrapper {
+      position: sticky;
+      bottom: 12px;
+      z-index: 50;
+      margin-top: auto;
+      padding-top: 10px;
+    }
+
+    .composer-container {
+      background: white;
+      border: 1px solid #d1d9e0;
+      border-radius: var(--radius-composer);
+      box-shadow: var(--shadow-composer);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .composer-container:focus-within {
+      border-color: var(--blue);
+      box-shadow: 0 4px 22px rgba(35, 101, 138, 0.16);
+    }
+
+    /* Status bar inside composer */
+    .composer-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      min-height: 18px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .status-dot-sm {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+      display: inline-block;
+    }
+
+    .status-dot-sm.listening {
+      background: var(--success);
+      box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.25);
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    .status-dot-sm.processing { background: var(--blue); }
+    .status-dot-sm.speaking { background: #8b5cf6; }
+    .status-dot-sm.error { background: var(--danger); }
+
+    .composer-interim {
+      font-size: 12px;
+      color: var(--muted);
+      font-style: italic;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    /* Input area */
+    .composer-input-row {
+      display: flex;
+      align-items: center;
+    }
+
+    .composer-textarea {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font-family: inherit;
+      font-size: 14.5px;
+      color: var(--text);
+      resize: none;
+      min-height: 24px;
+      max-height: 140px;
+      line-height: 1.4;
+      padding: 2px 4px;
+    }
+
+    .composer-textarea::placeholder {
+      color: #8c9ba5;
+    }
+
+    /* Controls bar */
+    .composer-controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding-top: 4px;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .composer-controls-left,
+    .composer-controls-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* Control Pills */
+    .pill-select,
+    .pill-btn {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 16px;
+      font-size: 11.5px;
+      padding: 4px 10px;
+      color: #334155;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      height: 28px;
+    }
+
+    .pill-select:hover,
+    .pill-btn:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .pill-btn.active {
+      background: var(--blue-light);
+      border-color: #93c5fd;
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+
+    /* Icon Buttons */
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .icon-btn:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      color: var(--navy);
+    }
+
+    .icon-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .icon-btn.stop-btn {
+      background: var(--danger-bg);
+      border-color: #fca5a5;
+      color: var(--danger);
+    }
+
+    .icon-btn.stop-btn:hover {
+      background: #fee2e2;
+    }
+
+    .send-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: var(--navy);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .send-btn:hover {
+      background: var(--blue);
+      transform: scale(1.04);
+    }
+
+    .send-btn:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Footnote */
+    .composer-footnote {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+      line-height: 1.3;
+    }
+
+    /* Results & Cards in Chat */
+    .results-grid {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .book {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+
+    .book h3, .book h4 {
+      margin: 0 0 5px;
+      color: var(--navy);
+      font-size: 15px;
+    }
+
+    .book p {
+      margin: 3px 0;
+      font-size: 13.5px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-preview {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid #ffeeba;
+    }
+
+    .badge-live {
+      background: var(--blue-light);
+      color: var(--accent-blue);
+      border: 1px solid #b8daff;
+    }
+
+    .badge-sim {
+      background: var(--pale);
+      color: var(--navy);
+      border: 1px solid var(--border);
+    }
+
+    .intent-preview-card {
+      background: #fafbfc;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      margin-top: 8px;
+    }
+
+    .intent-preview-card h4 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 14px;
+    }
+
+    .notice-box {
+      font-size: 12.5px;
+      padding: 9px 12px;
+      border-radius: 6px;
+      margin: 6px 0;
+    }
+
+    .notice-warning {
+      background: #fff8e1;
+      color: #856404;
+      border: 1px solid #ffeeba;
+    }
+
+    .notice-info {
+      background: #eef4f7;
+      color: var(--navy);
+      border: 1px solid var(--border);
+    }
+
+    .notice-error {
+      background: var(--danger-bg);
+      color: #8b2525;
+      border: 1px solid #fecaca;
+    }
+
+    /* Loan Section / Traditional Panel */
+    .panel {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 22px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 16px;
+      flex-wrap: wrap;
+    }
+
+    .section-heading h2 {
+      font-size: 20px;
+      margin: 0;
+      color: var(--navy);
+    }
+
+    button {
+      font: inherit;
+      border-radius: 6px;
+      border: 0;
+      padding: 8px 14px;
+      color: white;
+      background: var(--blue);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    button:hover { background: var(--navy); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    input, select {
+      font: inherit;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      padding: 9px 12px;
+      background: white;
+      font-size: 13.5px;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px rgba(35, 101, 138, 0.15);
+    }
+
+    footer {
+      background: white;
+      border-top: 1px solid var(--border);
+      padding: 16px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12.5px;
+      margin-top: auto;
+    }
+
+    /* Focus styles for keyboard accessibility */
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 2px;
+    }
+
+    .nav-tab.reset-btn {
+      border: 1px solid #fecdd3;
+      background: #fff1f2;
+      color: #be123c;
+      font-weight: 600;
+    }
+
+    .nav-tab.reset-btn:hover {
+      background: #ffe4e6;
+      border-color: #fda4af;
+      color: #9f1239;
+    }
+
+    .task-id-badge {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      color: #64748b;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 680px) {
+      .header-inner { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .header-nav { width: 100%; justify-content: flex-start; flex-wrap: wrap; gap: 6px; }
+      .chat-message.user-message { max-width: 90%; }
+      .composer-controls-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .composer-controls-right { width: 100%; justify-content: flex-end; margin-top: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <span>Library Services &amp; Catalogue Assistant</span>
+    <span id="connection-status">Checking library service…</span>
+  </div>
+
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">📚</div>
+        <div class="brand-title">
+          <h1>Library Agent</h1>
+          <div class="subtitle">Unified Conversational Catalogue &amp; Assistant</div>
+        </div>
+      </div>
+
+      <nav class="header-nav" aria-label="Main Navigation">
+        <button id="nav-btn-chat" class="nav-tab active" type="button" aria-selected="true">
+          💬 Chat &amp; Search
+        </button>
+        <button id="nav-btn-loans" class="nav-tab" type="button" aria-selected="false">
+          📋 My Loans &amp; Approvals
+        </button>
+        <button id="btn-reset-demo" class="nav-tab reset-btn" type="button" title="Reset all in-memory simulation state back to clean demo baseline">
+          🔄 Reset Demo State
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- VIEW 1: Unified Conversational Experience -->
+    <section id="view-chat" class="view-panel active" aria-labelledby="chat-heading">
+      <h2 id="chat-heading" style="display:none;">Library Conversation and Search</h2>
+      <div class="chat-layout">
+        <!-- Conversation Thread -->
+        <div id="conversation-thread" class="conversation-thread" role="log" aria-live="polite">
+          <!-- Initial Assistant Message with Quick Prompts -->
+          <div class="chat-message assistant-message">
+            <div class="assistant-card">
+              <div class="assistant-header">
+                <div class="assistant-profile">
+                  <span class="assistant-avatar" aria-hidden="true">📚</span>
+                  <span class="assistant-name">Library Agent</span>
+                </div>
+                <span id="active-source-pill" class="badge badge-sim">Mode: Simulation catalogue</span>
+              </div>
+              <div class="assistant-body">
+                <p style="margin: 0 0 10px; font-size: 14.5px; line-height: 1.5;">
+                  Welcome to <strong>Library Agent</strong> — an intelligent library assistant supporting both the <strong>Simulation catalogue</strong> and the read-only <strong>Live Koha OPAC</strong>. Ask questions naturally to discover books, check copy availability, review loan due dates, or coordinate multi-intent workflows.
+                </p>
+                <div class="quick-prompts">
+                  <span class="quick-prompts-label">Live Demo Scenarios:</span>
+                  <button type="button" class="prompt-chip" data-query="Find Data Science and Algorithm and tell me if it is available.">
+                    🔎 A: Search &amp; Availability
+                  </button>
+                  <button type="button" class="prompt-chip" data-query="Show my loan books">
+                    📚 B1: My Loans
+                  </button>
+                  <button type="button" class="prompt-chip" data-query="Show me the newest books">
+                    ✨ B2: New Arrivals
+                  </button>
+                  <button type="button" class="prompt-chip" data-query="Show my loans and list my pending holds.">
+                    📑 C: Loans &amp; Holds (Compound)
+                  </button>
+                  <button type="button" class="prompt-chip" data-query="Renew my books and reserve Operating System Concepts.">
+                    🛡️ D: Renewal &amp; Hold Approval
+                  </button>
+                  <button type="button" class="prompt-chip" data-query="Cancel my hold for Database Management Systems">
+                    ❌ E: Hold Cancellation
+                  </button>
+                  <button type="button" class="prompt-chip" data-query="What are the library hours?">
+                    ℹ️ Library Info
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unified ChatGPT-Inspired Composer -->
+        <div class="composer-wrapper">
+          <form id="unified-composer-form" class="composer-container" autocomplete="off">
+            <!-- Composer Status Bar -->
+            <div id="composer-status-bar" class="composer-status-bar">
+              <div class="status-badge">
+                <span id="voice-status-dot" class="status-dot-sm"></span>
+                <span id="voice-status-text" role="status" aria-live="polite">Idle</span>
+              </div>
+              <div id="voice-interim-text" class="composer-interim" aria-live="polite"></div>
+              <div id="composer-fallback-notice" class="composer-interim" style="display:none; color:var(--danger);" role="status"></div>
+            </div>
+
+            <!-- Composer Input Row -->
+            <div class="composer-input-row">
+              <textarea id="composer-input" class="composer-textarea" rows="1"
+                placeholder="Ask your library anything… (e.g. Search for science, or Renew my books)"
+                aria-label="Ask your library anything"></textarea>
+            </div>
+
+            <!-- Composer Action Controls Row -->
+            <div class="composer-controls-row">
+              <div class="composer-controls-left">
+                <!-- Source Selector -->
+                <select id="search-source" class="pill-select" aria-label="Catalogue search source" title="Select catalogue source">
+                  <option value="simulation" selected>Simulation catalogue (default)</option>
+                  <option value="live">Live Koha OPAC (read-only)</option>
+                </select>
+
+                <!-- Voice Mode Toggle -->
+                <button id="voice-mode-toggle" type="button" class="pill-btn"
+                  title="Toggle interactive voice response mode" aria-pressed="false">
+                  <span>🎙️</span> <span id="voice-mode-label">Voice Mode: Off</span>
+                </button>
+
+                <!-- Language Selector -->
+                <select id="voice-language-select" class="pill-select" aria-label="Speech language" title="Speech language">
+                  <option value="en-IN" selected>en-IN (India)</option>
+                  <option value="en-US">en-US (US)</option>
+                  <option value="en-GB">en-GB (UK)</option>
+                </select>
+              </div>
+
+              <div class="composer-controls-right">
+                <!-- Interrupt / Stop Controls -->
+                <button id="voice-stop-listen-btn" type="button" class="icon-btn stop-btn"
+                  style="display:none;" title="Stop listening" aria-label="Stop Listening">
+                  ⏹️
+                </button>
+                <button id="voice-stop-speak-btn" type="button" class="icon-btn stop-btn"
+                  style="display:none;" title="Stop speaking" aria-label="Stop Speaking">
+                  🔇
+                </button>
+
+                <!-- Microphone Button -->
+                <button id="voice-mic-btn" type="button" class="icon-btn"
+                  title="Start speech recognition" aria-label="Start voice recognition">
+                  🎤
+                </button>
+
+                <!-- Send Button -->
+                <button id="composer-send-btn" type="submit" class="send-btn"
+                  title="Send request (Enter)" aria-label="Send request">
+                  ↑
+                </button>
+              </div>
+            </div>
+          </form>
+
+          <!-- Privacy & Boundaries Footnote -->
+          <div class="composer-footnote">
+            Speech recognition is processed natively in-browser. No microphone audio is stored on the server. Write actions are strictly preview-only and require explicit human approval.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: Loans & Approvals Dashboard -->
+    <section id="view-loans" class="view-panel" aria-labelledby="loans-heading">
+      <div class="panel">
+        <div class="section-heading">
+          <h2 id="loans-heading">Patron Loans &amp; Renewal Approvals</h2>
+          <button id="refresh-loans" type="button">Refresh loan records</button>
+        </div>
+
+        <form id="issue-form" style="display:grid; gap:12px;">
+          <label style="display:grid; gap:4px; font-weight:600; font-size:13.5px; color:var(--navy);">
+            Student ID
+            <input id="issue-student-id" type="text" maxlength="50"
+              value="STU-001" placeholder="Enter student ID, e.g. STU-001" required>
+          </label>
+
+          <h3 style="margin:14px 0 6px; font-size:16px; color:var(--navy);">Current Loans for this Student</h3>
+          <div class="results-grid" id="loan-results">
+            Enter a student ID to view current loans.
+          </div>
+
+          <div style="margin-top:10px; display:flex; gap:12px; align-items:center;">
+            <button id="final-issue-submit" type="submit">Final Submit</button>
+            <p id="issue-status" role="status" aria-live="polite" style="margin:0; font-size:13px; color:var(--muted);">
+              Select a book and verify details. No loan change occurs before Final Submit.
+            </p>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel" style="margin-top: 20px;">
+        <h3 style="margin: 0 0 8px; color: var(--navy); font-size: 16px;">System Policy &amp; Safety Protections</h3>
+        <p style="margin: 4px 0; font-size: 13.5px; color: var(--text);">
+          - <strong>Overdue Fine Calculation:</strong> Synthetic simulation fines are assessed at ₹5/day in INR calculated relative to UTC dates.
+        </p>
+        <p style="margin: 4px 0; font-size: 13.5px; color: var(--text);">
+          - <strong>Hold Protection:</strong> Renewal is blocked if another patron is waiting in the hold queue.
+        </p>
+        <p style="margin: 4px 0; font-size: 13.5px; color: var(--text);">
+          - <strong>Human Approval Boundary:</strong> Spoken or conversational text intents cannot execute state changes. Approval buttons remain the only approval mechanism.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Library Hold &amp; Renewal Agent — Conversational AI Architecture &amp; Verified Simulation
+  </footer>
+
+  <script>
+    // =========================================================================
+    // Core State & DOM Elements
+    // =========================================================================
+    const connectionStatus = document.getElementById("connection-status");
+    const conversationThread = document.getElementById("conversation-thread");
+    const composerForm = document.getElementById("unified-composer-form");
+    const composerInput = document.getElementById("composer-input");
+    const composerSendBtn = document.getElementById("composer-send-btn");
+    const sourceSelect = document.getElementById("search-source");
+    const activeSourcePill = document.getElementById("active-source-pill");
+    const voiceModeToggle = document.getElementById("voice-mode-toggle");
+    const voiceModeLabel = document.getElementById("voice-mode-label");
+    const voiceLangSelect = document.getElementById("voice-language-select");
+    const voiceMicBtn = document.getElementById("voice-mic-btn");
+    const voiceStopListenBtn = document.getElementById("voice-stop-listen-btn");
+    const voiceStopSpeakBtn = document.getElementById("voice-stop-speak-btn");
+    const voiceStatusDot = document.getElementById("voice-status-dot");
+    const voiceStatusText = document.getElementById("voice-status-text");
+    const voiceInterimText = document.getElementById("voice-interim-text");
+    const composerFallbackNotice = document.getElementById("composer-fallback-notice");
+
+    // Views
+    const navBtnChat = document.getElementById("nav-btn-chat");
+    const navBtnLoans = document.getElementById("nav-btn-loans");
+    const viewChat = document.getElementById("view-chat");
+    const viewLoans = document.getElementById("view-loans");
+
+    // State
+    let isVoiceModeOn = false;
+    let isListening = false;
+    let isSpeaking = false;
+    let recognitionInstance = null;
+    let loansRequestNumber = 0;
+
+    // =========================================================================
+    // Navigation / View Switching
+    // =========================================================================
+    function switchView(target) {
+      if (target === "loans") {
+        viewChat.classList.remove("active");
+        viewLoans.classList.add("active");
+        navBtnChat.classList.remove("active");
+        navBtnChat.setAttribute("aria-selected", "false");
+        navBtnLoans.classList.add("active");
+        navBtnLoans.setAttribute("aria-selected", "true");
+        loadLoans();
+      } else {
+        viewLoans.classList.remove("active");
+        viewChat.classList.add("active");
+        navBtnLoans.classList.remove("active");
+        navBtnLoans.setAttribute("aria-selected", "false");
+        navBtnChat.classList.add("active");
+        navBtnChat.setAttribute("aria-selected", "true");
+      }
+    }
+
+    navBtnChat.addEventListener("click", () => switchView("chat"));
+    navBtnLoans.addEventListener("click", () => switchView("loans"));
+
+    // Demo State Reset Handler (Simulation Only)
+    const btnResetDemo = document.getElementById("btn-reset-demo");
+    if (btnResetDemo) {
+      btnResetDemo.addEventListener("click", async () => {
+        const confirmed = window.confirm(
+          "Reset all simulated loans, hold queues, and approval requests to the clean demonstration baseline?\n\n(Simulation only — does not affect any real library or OPAC)."
+        );
+        if (!confirmed) return;
+
+        try {
+          const res = await fetch("/simulation/reset", { method: "POST" });
+          const data = await res.json();
+          if (data.ok) {
+            const sysMsg = document.createElement("div");
+            sysMsg.className = "chat-message assistant-message";
+            sysMsg.innerHTML = `
+              <div class="assistant-card" style="border-left: 4px solid var(--blue);">
+                <div class="assistant-header">
+                  <div class="assistant-profile">
+                    <span class="assistant-avatar" aria-hidden="true">🔄</span>
+                    <span class="assistant-name">System Notice</span>
+                  </div>
+                  <span class="badge badge-sim">SIMULATION RESET</span>
+                </div>
+                <div class="assistant-body">
+                  <p style="margin:0; font-size:13.5px; color:#15803d; font-weight:600;">
+                    ✓ Simulation demo state successfully restored to initial baseline.
+                  </p>
+                  <p style="margin:4px 0 0; font-size:12.5px; color:var(--muted);">
+                    All active holds, pending approvals, and synthetic loans have been reset. Ready for live demonstration.
+                  </p>
+                </div>
+              </div>
+            `;
+            conversationThread.appendChild(sysMsg);
+            scrollToLatest();
+
+            if (viewLoans.classList.contains("active")) {
+              loadLoans();
+            }
+          } else {
+            alert("Reset blocked: " + (data.error || "Could not reset simulation state."));
+          }
+        } catch (err) {
+          alert("Demo state reset failed: " + err.message);
+        }
+      });
+    }
+
+    // Source Selector synchronization
+    sourceSelect.addEventListener("change", () => {
+      const isLive = sourceSelect.value === "live";
+      if (activeSourcePill) {
+        activeSourcePill.textContent = isLive ? "Mode: Live Koha OPAC (Read-Only)" : "Mode: Simulation catalogue";
+        activeSourcePill.className = isLive ? "badge badge-live" : "badge badge-sim";
+      }
+    });
+
+    // Quick Prompt Chips
+    document.addEventListener("click", (e) => {
+      if (e.target && e.target.classList.contains("prompt-chip")) {
+        const query = e.target.getAttribute("data-query");
+        if (query) {
+          composerInput.value = query;
+          handleComposerSubmit();
+        }
+      }
+    });
+
+    // =========================================================================
+    // Status & Synthesis Helpers
+    // =========================================================================
+    function setVoiceStatus(state, label) {
+      const map = {
+        Idle: { text: label || "Idle", color: "#94a3b8", dotClass: "" },
+        Listening: { text: label || "Listening… speak now", color: "var(--success)", dotClass: "listening" },
+        Processing: { text: label || "Processing…", color: "var(--blue)", dotClass: "processing" },
+        Speaking: { text: label || "Speaking…", color: "#8b5cf6", dotClass: "speaking" },
+        Error: { text: label || "Error", color: "var(--danger)", dotClass: "error" }
+      };
+
+      const cfg = map[state] || map.Idle;
+      if (voiceStatusDot) {
+        voiceStatusDot.className = "status-dot-sm " + cfg.dotClass;
+      }
+      if (voiceStatusText) {
+        voiceStatusText.textContent = cfg.text;
+        voiceStatusText.style.color = cfg.color;
+      }
+    }
+
+    function speakText(text) {
+      if (!("speechSynthesis" in window)) return;
+      if (!text) return;
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = voiceLangSelect.value || "en-IN";
+
+      utterance.onstart = () => {
+        isSpeaking = true;
+        setVoiceStatus("Speaking");
+        voiceStopSpeakBtn.style.display = "inline-flex";
+      };
+
+      utterance.onend = () => {
+        isSpeaking = false;
+        setVoiceStatus("Idle");
+        voiceStopSpeakBtn.style.display = "none";
+      };
+
+      utterance.onerror = () => {
+        isSpeaking = false;
+        setVoiceStatus("Idle");
+        voiceStopSpeakBtn.style.display = "none";
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function stopSpeaking() {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      isSpeaking = false;
+      setVoiceStatus("Idle");
+      voiceStopSpeakBtn.style.display = "none";
+    }
+
+    voiceStopSpeakBtn.addEventListener("click", stopSpeaking);
+
+    // Voice Mode Toggle
+    voiceModeToggle.addEventListener("click", () => {
+      isVoiceModeOn = !isVoiceModeOn;
+      voiceModeToggle.setAttribute("aria-pressed", String(isVoiceModeOn));
+      voiceModeToggle.classList.toggle("active", isVoiceModeOn);
+      voiceModeLabel.textContent = isVoiceModeOn ? "Voice Mode: On" : "Voice Mode: Off";
+
+      if (!isVoiceModeOn && isSpeaking) {
+        stopSpeaking();
+      }
+    });
+
+    // =========================================================================
+    // Speech Recognition
+    // =========================================================================
+    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    function initSpeechRecognition() {
+      if (!SpeechRecognitionClass) {
+        composerFallbackNotice.style.display = "block";
+        composerFallbackNotice.textContent = "Speech recognition is unsupported in this browser. Please type commands directly.";
+        voiceMicBtn.disabled = true;
+        voiceMicBtn.title = "Speech recognition unsupported in this browser";
+        return;
+      }
+
+      voiceMicBtn.addEventListener("click", () => {
+        if (isListening) return;
+
+        try {
+          recognitionInstance = new SpeechRecognitionClass();
+          recognitionInstance.lang = voiceLangSelect.value || "en-IN";
+          recognitionInstance.continuous = false;
+          recognitionInstance.interimResults = true;
+          recognitionInstance.maxAlternatives = 1;
+
+          recognitionInstance.onstart = () => {
+            isListening = true;
+            setVoiceStatus("Listening");
+            voiceStopListenBtn.style.display = "inline-flex";
+            voiceMicBtn.disabled = true;
+            voiceInterimText.textContent = "";
+            composerFallbackNotice.style.display = "none";
+          };
+
+          recognitionInstance.onresult = (event) => {
+            let interimStr = "";
+            let finalStr = "";
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const part = event.results[i][0].transcript;
+              if (event.results[i].isFinal) {
+                finalStr += part;
+              } else {
+                interimStr += part;
+              }
+            }
+
+            if (interimStr) {
+              voiceInterimText.textContent = `Listening: "${interimStr}"`;
+            }
+
+            if (finalStr) {
+              composerInput.value = finalStr;
+            }
+          };
+
+          recognitionInstance.onerror = (event) => {
+            isListening = false;
+            setVoiceStatus("Error", "Recognition error");
+            voiceStopListenBtn.style.display = "none";
+            voiceMicBtn.disabled = false;
+
+            if (event.error === "not-allowed") {
+              composerFallbackNotice.style.display = "block";
+              composerFallbackNotice.textContent = "Microphone access was denied. You can type commands manually.";
+            } else if (event.error === "no-speech") {
+              setVoiceStatus("Idle");
+            } else {
+              composerFallbackNotice.style.display = "block";
+              composerFallbackNotice.textContent = "Speech recognition error: " + event.error;
+            }
+          };
+
+          recognitionInstance.onend = () => {
+            isListening = false;
+            voiceStopListenBtn.style.display = "none";
+            voiceMicBtn.disabled = false;
+            voiceInterimText.textContent = "";
+
+            const text = composerInput.value.trim();
+            if (text) {
+              if (isVoiceModeOn) {
+                handleComposerSubmit(true);
+              } else {
+                setVoiceStatus("Idle");
+                composerInput.focus();
+              }
+            } else {
+              setVoiceStatus("Idle");
+            }
+          };
+
+          recognitionInstance.start();
+        } catch (err) {
+          isListening = false;
+          setVoiceStatus("Error", "Failed to start");
+          voiceStopListenBtn.style.display = "none";
+          voiceMicBtn.disabled = false;
+          composerFallbackNotice.style.display = "block";
+          composerFallbackNotice.textContent = "Could not start mic: " + err.message;
+        }
+      });
+
+      voiceStopListenBtn.addEventListener("click", () => {
+        if (recognitionInstance && isListening) {
+          setVoiceStatus("Processing", "Stopping mic…");
+          recognitionInstance.stop();
+        }
+      });
+    }
+
+    initSpeechRecognition();
+
+    // =========================================================================
+    // Conversation Management: User & Assistant Bubbles
+    // =========================================================================
+    function appendUserMessage(text) {
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "chat-message user-message";
+
+      const bubble = document.createElement("div");
+      bubble.className = "user-bubble";
+      bubble.textContent = text;
+
+      msgDiv.appendChild(bubble);
+      conversationThread.appendChild(msgDiv);
+      scrollToLatest();
+    }
+
+    function createAssistantMessage(sourceLabel, taskId) {
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "chat-message assistant-message";
+      if (taskId) msgDiv.dataset.taskId = taskId;
+
+      const card = document.createElement("div");
+      card.className = "assistant-card";
+      if (taskId) card.dataset.taskId = taskId;
+
+      const header = document.createElement("div");
+      header.className = "assistant-header";
+
+      const profile = document.createElement("div");
+      profile.className = "assistant-profile";
+      profile.innerHTML = '<span class="assistant-avatar" aria-hidden="true">📚</span><span class="assistant-name">Library Agent</span>';
+
+      if (taskId) {
+        const idBadge = document.createElement("span");
+        idBadge.className = "task-id-badge";
+        idBadge.style.fontSize = "11px";
+        idBadge.style.color = "#64748b";
+        idBadge.style.fontFamily = "monospace";
+        idBadge.style.marginLeft = "4px";
+        idBadge.textContent = `[${taskId}]`;
+        profile.appendChild(idBadge);
+      }
+
+      const headerRight = document.createElement("div");
+      headerRight.style.display = "flex";
+      headerRight.style.alignItems = "center";
+      headerRight.style.gap = "6px";
+      headerRight.style.flexWrap = "wrap";
+
+      const taskStatusBadge = document.createElement("span");
+      taskStatusBadge.className = "badge task-status-badge";
+      taskStatusBadge.style.background = "#f1f5f9";
+      taskStatusBadge.style.color = "#475569";
+      taskStatusBadge.style.border = "1px solid #cbd5e1";
+      taskStatusBadge.textContent = "Queued";
+
+      const badge = document.createElement("span");
+      const isLive = sourceSelect.value === "live";
+      badge.className = isLive ? "badge badge-live" : "badge badge-sim";
+      badge.textContent = sourceLabel || (isLive ? "Mode: Live Koha OPAC (Read-Only)" : "Mode: Simulation catalogue");
+
+      headerRight.append(taskStatusBadge, badge);
+      header.append(profile, headerRight);
+
+      const body = document.createElement("div");
+      body.className = "assistant-body";
+
+      const controls = document.createElement("div");
+      controls.className = "task-controls";
+      controls.style.display = "none";
+      controls.style.marginTop = "8px";
+      controls.style.paddingTop = "8px";
+      controls.style.borderTop = "1px solid #f1f5f9";
+      controls.style.gap = "8px";
+      controls.style.alignItems = "center";
+
+      card.append(header, body, controls);
+      msgDiv.appendChild(card);
+      conversationThread.appendChild(msgDiv);
+      scrollToLatest();
+
+      return {
+        card,
+        body,
+        badge,
+        statusBadge: taskStatusBadge,
+        controls,
+        taskId,
+        setTaskStatus(state) {
+          taskStatusBadge.className = "badge task-status-badge";
+          const s = String(state).toUpperCase();
+          if (s === "QUEUED") {
+            taskStatusBadge.style.background = "#f1f5f9";
+            taskStatusBadge.style.color = "#475569";
+            taskStatusBadge.style.border = "1px solid #cbd5e1";
+            taskStatusBadge.textContent = "⏳ Queued";
+          } else if (s === "PROCESSING") {
+            taskStatusBadge.style.background = "#e0f2fe";
+            taskStatusBadge.style.color = "#0284c7";
+            taskStatusBadge.style.border = "1px solid #bae6fd";
+            taskStatusBadge.textContent = "🔄 Processing…";
+          } else if (s === "NEEDS_APPROVAL") {
+            taskStatusBadge.style.background = "#fef3c7";
+            taskStatusBadge.style.color = "#b45309";
+            taskStatusBadge.style.border = "1px solid #fde68a";
+            taskStatusBadge.textContent = "⏸️ Needs approval";
+          } else if (s === "COMPLETED") {
+            taskStatusBadge.style.background = "#dcfce7";
+            taskStatusBadge.style.color = "#15803d";
+            taskStatusBadge.style.border = "1px solid #bbf7d0";
+            taskStatusBadge.textContent = "✅ Completed";
+          } else if (s === "FAILED") {
+            taskStatusBadge.style.background = "#fee2e2";
+            taskStatusBadge.style.color = "#b91c1c";
+            taskStatusBadge.style.border = "1px solid #fecaca";
+            taskStatusBadge.textContent = "❌ Failed";
+          } else if (s === "CANCELLED") {
+            taskStatusBadge.style.background = "#f1f5f9";
+            taskStatusBadge.style.color = "#64748b";
+            taskStatusBadge.style.border = "1px solid #cbd5e1";
+            taskStatusBadge.textContent = "⏹️ Cancelled";
+          } else {
+            taskStatusBadge.textContent = state;
+          }
+        },
+        showCancel(onCancel) {
+          controls.replaceChildren();
+          controls.style.display = "flex";
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "task-cancel-btn";
+          btn.style.padding = "4px 10px";
+          btn.style.fontSize = "12px";
+          btn.style.background = "#fff1f2";
+          btn.style.color = "#be123c";
+          btn.style.border = "1px solid #fecdd3";
+          btn.style.borderRadius = "4px";
+          btn.style.cursor = "pointer";
+          btn.textContent = "Cancel / Stop waiting";
+          btn.addEventListener("click", onCancel);
+          controls.appendChild(btn);
+        },
+        showRetry(onRetry) {
+          controls.replaceChildren();
+          controls.style.display = "flex";
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "task-retry-btn";
+          btn.style.padding = "4px 10px";
+          btn.style.fontSize = "12px";
+          btn.style.background = "#f0fdf4";
+          btn.style.color = "#15803d";
+          btn.style.border = "1px solid #bbf7d0";
+          btn.style.borderRadius = "4px";
+          btn.style.cursor = "pointer";
+          btn.textContent = "↻ Retry task";
+          btn.addEventListener("click", onRetry);
+          controls.appendChild(btn);
+        },
+        hideControls() {
+          controls.replaceChildren();
+          controls.style.display = "none";
+        },
+        setStatus(text, isError = false) {
+          body.replaceChildren();
+          const notice = document.createElement("div");
+          notice.className = isError ? "notice-box notice-error" : "notice-box notice-info";
+          notice.textContent = text;
+          body.appendChild(notice);
+          scrollToLatest();
+        }
+      };
+    }
+
+    function scrollToLatest() {
+      conversationThread.scrollTop = conversationThread.scrollHeight;
+    }
+
+    // Auto-expand textarea
+    composerInput.addEventListener("input", () => {
+      composerInput.style.height = "auto";
+      composerInput.style.height = Math.min(composerInput.scrollHeight, 140) + "px";
+    });
+
+    // Keyboard support: Enter sends, Shift+Enter newlines
+    composerInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleComposerSubmit();
+      }
+    });
+
+    composerForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      handleComposerSubmit();
+    });
+
+    // =========================================================================
+    // Handling Submission in Unified Composer (Phase 5 Concurrent Task Orchestration)
+    // =========================================================================
+    let lastSubmitTimestamp = 0;
+    let lastSubmitQuery = "";
+
+    async function handleComposerSubmit(fromVoice = false) {
+      const text = composerInput.value.trim();
+      if (!text) return;
+
+      // Debounce rapid identical submissions (~350ms window)
+      const now = Date.now();
+      if (now - lastSubmitTimestamp < 350 && text === lastSubmitQuery) {
+        return;
+      }
+      lastSubmitTimestamp = now;
+      lastSubmitQuery = text;
+
+      appendUserMessage(text);
+      composerInput.value = "";
+      composerInput.style.height = "auto";
+      // DO NOT disable composerInput or composerSendBtn: keep composer fully responsive
+      // so user can send concurrent requests while previous ones are processing!
+
+      const taskId = `task-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      const isLive = sourceSelect.value === "live";
+      const assistantMsg = createAssistantMessage(
+        isLive ? "Mode: Live Koha OPAC (Read-Only)" : "Mode: Simulation catalogue",
+        taskId
+      );
+
+      // Route all typed and voice requests through Phase 5 task orchestration
+      await executeConversationalTask(text, assistantMsg, taskId, fromVoice || isVoiceModeOn);
+    }
+
+    // =========================================================================
+    // Phase 5: Concurrent Task Execution & Orchestration
+    // =========================================================================
+    async function executeConversationalTask(transcript, assistantMsg, taskId, shouldSpeak = false) {
+      let isCancelled = false;
+      const abortController = new AbortController();
+
+      assistantMsg.setTaskStatus("PROCESSING");
+      setVoiceStatus("Processing");
+      assistantMsg.setStatus("Planning and coordinating library task…");
+
+      assistantMsg.showCancel(async () => {
+        isCancelled = true;
+        abortController.abort();
+        try {
+          await fetch("/tasks/" + encodeURIComponent(taskId) + "/cancel", { method: "POST" });
+        } catch (_) {}
+        assistantMsg.setTaskStatus("CANCELLED");
+        assistantMsg.hideControls();
+        assistantMsg.setStatus(
+          "Request was cancelled by user. Note: cancelling stops waiting for the response; any operation already executed on the backend is not rolled back.",
+          false
+        );
+        setVoiceStatus("Idle");
+        if (shouldSpeak) speakText("Task cancelled by user.");
+      });
+
+      const studentInput = document.getElementById("issue-student-id");
+      const studentId = (studentInput && studentInput.value.trim()) || "STU-001";
+      const isLive = sourceSelect.value === "live";
+      const source = isLive ? "live" : "simulation";
+
+      let data = null;
+      try {
+        const res = await fetch("/tasks/orchestrate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskId, transcript, studentId, source }),
+          signal: abortController.signal
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Task request failed with status ${res.status}`);
+        }
+        data = await res.json();
+      } catch (err) {
+        if (isCancelled || err.name === "AbortError") {
+          return;
+        }
+        assistantMsg.setTaskStatus("FAILED");
+        assistantMsg.setStatus("Task execution failed: " + err.message, true);
+        assistantMsg.showRetry(() => executeConversationalTask(transcript, assistantMsg, taskId, shouldSpeak));
+        setVoiceStatus("Error", "Task failed");
+        return;
+      }
+
+      if (!data || !data.task) {
+        assistantMsg.setTaskStatus("FAILED");
+        assistantMsg.setStatus("Task failed: No task details returned from server.", true);
+        assistantMsg.showRetry(() => executeConversationalTask(transcript, assistantMsg, taskId, shouldSpeak));
+        setVoiceStatus("Error", "Task failed");
+        return;
+      }
+
+      const task = data.task;
+      assistantMsg.setTaskStatus(task.status);
+
+      if (task.status === "COMPLETED" || task.status === "NEEDS_APPROVAL") {
+        assistantMsg.hideControls();
+      } else if (task.status === "FAILED") {
+        assistantMsg.showRetry(() => executeConversationalTask(transcript, assistantMsg, taskId, shouldSpeak));
+      }
+
+      assistantMsg.body.replaceChildren();
+
+      // Compound coordinator notice
+      if (task.isCombined && task.results && task.results.length > 1) {
+        const combinedBanner = document.createElement("div");
+        combinedBanner.className = "notice-box notice-info";
+        combinedBanner.style.fontWeight = "600";
+        const strategyName = (task.strategy || "coordinated").replace(/_/g, " ");
+        combinedBanner.textContent = `ℹ️ Compound request coordinated (${task.results.length} subtasks). Strategy: ${strategyName}.`;
+        assistantMsg.body.appendChild(combinedBanner);
+      }
+
+      // Pre-fetch student holds if simulation mode has search or book results
+      let cachedStudentHolds = null;
+      const hasBookResults = (task.results || []).some(
+        r => (r.type === "SEARCH" || r.type === "BOOK_SEARCH" || r.type === "NEW_ARRIVALS") && r.mode !== "live_koha"
+      );
+      if (hasBookResults) {
+        try {
+          cachedStudentHolds = await fetchStudentHolds(studentId);
+        } catch (_) {
+          cachedStudentHolds = { holds: [], pending: [] };
+        }
+      }
+
+      for (let i = 0; i < (task.results || []).length; i++) {
+        const r = task.results[i];
+        const subtaskCard = document.createElement("div");
+        subtaskCard.className = "intent-preview-card";
+        subtaskCard.dataset.subtaskId = r.subtaskId || `st-${i}`;
+        subtaskCard.dataset.type = r.type || "UNKNOWN";
+
+        const cardHeader = document.createElement("div");
+        cardHeader.style.display = "flex";
+        cardHeader.style.justifyContent = "space-between";
+        cardHeader.style.alignItems = "center";
+        cardHeader.style.gap = "8px";
+        cardHeader.style.marginBottom = "8px";
+        cardHeader.style.flexWrap = "wrap";
+
+        const titleEl = document.createElement("h4");
+        const badgeEl = document.createElement("span");
+        badgeEl.className = "badge";
+
+        if (r.status === "FAILED") {
+          titleEl.textContent = `Subtask Failed: ${r.type}`;
+          badgeEl.style.background = "#fee2e2";
+          badgeEl.style.color = "#991b1b";
+          badgeEl.textContent = "FAILED";
+
+          const errNotice = document.createElement("div");
+          errNotice.className = "notice-box notice-error";
+          errNotice.textContent = `❌ ${r.error || "Subtask encountered an error."} (Other subtasks remain unaffected).`;
+
+          cardHeader.append(titleEl, badgeEl);
+          subtaskCard.append(cardHeader, errNotice);
+        } else if (r.isWriteAction || r.status === "NEEDS_APPROVAL") {
+          badgeEl.className = "badge badge-preview";
+          badgeEl.textContent = "NEEDS APPROVAL";
+
+          if (r.type === "RENEWAL" || r.type === "RENEWAL_REQUEST") {
+            titleEl.textContent = "Renewal Request (Approval Required)";
+            const targetP = document.createElement("p");
+            targetP.style.margin = "4px 0";
+            targetP.style.fontSize = "13px";
+            targetP.innerHTML = `<strong>Target:</strong> "${r.target || "my library books"}"`;
+
+            const msgP = document.createElement("p");
+            msgP.style.margin = "4px 0";
+            msgP.style.fontSize = "13px";
+            msgP.textContent = r.message || "Renewal intent detected.";
+
+            const notice = document.createElement("div");
+            notice.className = "notice-box notice-warning";
+            notice.textContent = "⚠️ Safety Boundary: Spoken or conversational renewals are strictly preview-only. In the simulation, state-changing actions require explicit human approval. Please check eligibility in the Loans & Approvals tab and click 'Approve renewal' explicitly.";
+
+            const linkLoansBtn = document.createElement("button");
+            linkLoansBtn.type = "button";
+            linkLoansBtn.style.marginTop = "6px";
+            linkLoansBtn.textContent = "View Loans & Approvals →";
+            linkLoansBtn.addEventListener("click", () => switchView("loans"));
+
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, targetP, msgP, notice, linkLoansBtn);
+          } else if (r.type === "HOLD" || r.type === "HOLD_REQUEST") {
+            titleEl.textContent = "Hold Request (Approval Required)";
+            const targetP = document.createElement("p");
+            targetP.style.margin = "4px 0";
+            targetP.style.fontSize = "13px";
+            targetP.innerHTML = `<strong>Target:</strong> "${r.target || "book"}"`;
+
+            const msgP = document.createElement("p");
+            msgP.style.margin = "4px 0";
+            msgP.style.fontSize = "13px";
+            msgP.textContent = r.message || "Hold intent detected.";
+
+            const notice = document.createElement("div");
+            notice.className = "notice-box notice-warning";
+            notice.textContent = "⚠️ Safety Boundary: Spoken or conversational holds are strictly preview-only. In the simulation, state-changing actions require explicit human approval. Please search the catalogue to select the exact edition and click 'Request hold' explicitly.";
+
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, targetP, msgP, notice);
+          } else if (r.type === "HOLD_CANCELLATION") {
+            titleEl.textContent = "Hold Cancellation (Approval Required)";
+            const targetP = document.createElement("p");
+            targetP.style.margin = "4px 0";
+            targetP.style.fontSize = "13px";
+            targetP.innerHTML = `<strong>Target:</strong> "${r.target || "active hold"}"`;
+
+            const notice = document.createElement("div");
+            notice.className = "notice-box notice-warning";
+            notice.textContent = "⚠️ Safety Boundary: Hold cancellation requires explicit patron interaction and cannot be performed automatically. Switch to the Loans/Holds tab to review and cancel your pending reservations.";
+
+            const linkLoansBtn = document.createElement("button");
+            linkLoansBtn.type = "button";
+            linkLoansBtn.style.marginTop = "6px";
+            linkLoansBtn.textContent = "View Active Holds in Loans Dashboard →";
+            linkLoansBtn.addEventListener("click", () => switchView("loans"));
+
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, targetP, notice, linkLoansBtn);
+          } else {
+            titleEl.textContent = `Action Preview: ${r.type}`;
+            const msgP = document.createElement("p");
+            msgP.textContent = r.message || "This operation requires explicit human confirmation.";
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, msgP);
+          }
+        } else if (r.type === "AVAILABILITY") {
+          titleEl.textContent = "Item Availability Check";
+          badgeEl.className = "badge " + (r.isAvailable ? "badge-sim" : "badge-preview");
+          badgeEl.style.background = r.isAvailable ? "#dcfce7" : "#fee2e2";
+          badgeEl.style.color = r.isAvailable ? "#15803d" : "#991b1b";
+          badgeEl.textContent = r.isAvailable ? "AVAILABLE" : "UNAVAILABLE";
+
+          const availNotice = document.createElement("div");
+          availNotice.className = r.isAvailable ? "notice-box notice-info" : "notice-box notice-warning";
+          if (r.isAvailable) {
+            availNotice.innerHTML = `✅ <strong>"${r.title || r.target}"</strong>: <strong>${r.availableCopies}</strong> copy/copies available (total copies: ${r.totalCopies}). Shelf status: Ready for checkout.`;
+          } else {
+            availNotice.innerHTML = `⚠️ <strong>"${r.title || r.target}"</strong> is currently unavailable (<strong>0</strong> of ${r.totalCopies} available). You may place a simulated hold to join the queue.`;
+          }
+
+          cardHeader.append(titleEl, badgeEl);
+          subtaskCard.append(cardHeader, availNotice);
+        } else if (r.type === "PATRON_LOANS") {
+          if (r.status === "RESTRICTED") {
+            titleEl.textContent = "Patron Account Restricted";
+            badgeEl.style.background = "#fee2e2";
+            badgeEl.style.color = "#991b1b";
+            badgeEl.textContent = "OPAC RESTRICTED";
+
+            const notice = document.createElement("div");
+            notice.className = "notice-box notice-warning";
+            notice.textContent = "🔒 Secure patron account data is unavailable on the public Koha OPAC without an authenticated HTTPS patron session. Switch to Simulation mode to inspect student loans, due dates, and hold queues.";
+
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, notice);
+          } else {
+            titleEl.textContent = `Active Simulated Loans (${r.studentId || studentId})`;
+            badgeEl.className = "badge badge-sim";
+            badgeEl.textContent = "SIMULATION DATA";
+
+            const recordsBox = document.createElement("div");
+            recordsBox.style.marginTop = "6px";
+            recordsBox.style.fontSize = "13px";
+
+            const loans = r.loans || [];
+            if (!loans.length) {
+              recordsBox.innerHTML = `<em>No active loans for student <strong>${r.studentId || studentId}</strong>.</em>`;
+            } else {
+              const ul = document.createElement("ul");
+              ul.style.paddingLeft = "18px";
+              ul.style.margin = "4px 0";
+              for (const b of loans) {
+                const li = document.createElement("li");
+                const overdueBadge = b.isOverdue ? `<span style="color:#b91c1c;font-weight:600;">(OVERDUE - Fine ₹5/day)</span>` : "";
+                li.innerHTML = `<strong>${b.title}</strong> [${b.id}] — Due: <strong>${b.dueDate || "N/A"}</strong> (Renewals: ${b.renewalsCount || 0}/${b.renewalLimit || 2}) ${overdueBadge}`;
+                ul.appendChild(li);
+              }
+              recordsBox.appendChild(ul);
+            }
+
+            const linkLoansBtn = document.createElement("button");
+            linkLoansBtn.type = "button";
+            linkLoansBtn.style.marginTop = "8px";
+            linkLoansBtn.textContent = "Open Loans & Approvals Dashboard →";
+            linkLoansBtn.addEventListener("click", () => switchView("loans"));
+
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, recordsBox, linkLoansBtn);
+          }
+        } else if (r.type === "DUE_DATE_LOOKUP") {
+          if (r.status === "RESTRICTED") {
+            titleEl.textContent = "Patron Due Dates Restricted";
+            badgeEl.style.background = "#fee2e2";
+            badgeEl.style.color = "#991b1b";
+            badgeEl.textContent = "OPAC RESTRICTED";
+
+            const notice = document.createElement("div");
+            notice.className = "notice-box notice-warning";
+            notice.textContent = "🔒 Live patron due dates require an authenticated Koha patron session. Switch to Simulation mode to inspect due dates.";
+
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, notice);
+          } else {
+            titleEl.textContent = "Simulated Loan Due Dates";
+            badgeEl.className = "badge badge-sim";
+            badgeEl.textContent = "SIMULATION DATA";
+
+            const recordsBox = document.createElement("div");
+            recordsBox.style.marginTop = "6px";
+            recordsBox.style.fontSize = "13px";
+
+            const dueDates = r.dueDates || [];
+            if (!dueDates.length) {
+              recordsBox.innerHTML = `<em>No matching loans found for <strong>${r.studentId || studentId}</strong>.</em>`;
+            } else {
+              const ul = document.createElement("ul");
+              ul.style.paddingLeft = "18px";
+              ul.style.margin = "4px 0";
+              for (const d of dueDates) {
+                const li = document.createElement("li");
+                const overdueNote = d.isOverdue ? `<span style="color:#b91c1c;font-weight:600;">(OVERDUE - Fine ₹5/day)</span>` : "";
+                li.innerHTML = `<strong>${d.title}</strong> [${d.id}] — Due date: <strong>${d.dueDate}</strong> ${overdueNote}`;
+                ul.appendChild(li);
+              }
+              recordsBox.appendChild(ul);
+            }
+
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, recordsBox);
+          }
+        } else if (r.type === "OVERDUE_BOOKS") {
+          if (r.status === "RESTRICTED") {
+            titleEl.textContent = "Overdue Status Restricted";
+            badgeEl.style.background = "#fee2e2";
+            badgeEl.style.color = "#991b1b";
+            badgeEl.textContent = "OPAC RESTRICTED";
+
+            const notice = document.createElement("div");
+            notice.className = "notice-box notice-warning";
+            notice.textContent = "🔒 Live overdue loan records require authenticated patron credentials.";
+
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, notice);
+          } else {
+            titleEl.textContent = "Overdue Loans & Fine Assessment";
+            badgeEl.className = "badge badge-sim";
+            badgeEl.textContent = "SIMULATION DATA";
+
+            const recordsBox = document.createElement("div");
+            recordsBox.style.marginTop = "6px";
+            recordsBox.style.fontSize = "13px";
+
+            const overdues = r.overdueLoans || [];
+            if (!overdues.length) {
+              recordsBox.innerHTML = `<em>Good news! Student <strong>${r.studentId || studentId}</strong> has 0 overdue books and ₹0 outstanding fines.</em>`;
+            } else {
+              const fineSummary = document.createElement("div");
+              fineSummary.className = "notice-box notice-warning";
+              fineSummary.innerHTML = `⚠️ <strong>${r.overdueCount} overdue book(s)</strong> detected. Estimated total fines: <strong>₹${r.estimatedFineTotal}</strong> (assessed at ₹5/day).`;
+              recordsBox.appendChild(fineSummary);
+
+              const ul = document.createElement("ul");
+              ul.style.paddingLeft = "18px";
+              ul.style.margin = "4px 0";
+              for (const b of overdues) {
+                const li = document.createElement("li");
+                li.innerHTML = `<strong>${b.title}</strong> [${b.id}] — Due: <strong style="color:#b91c1c;">${b.dueDate}</strong> (Estimated fine: ₹${b.estimatedFine || 0})`;
+                ul.appendChild(li);
+              }
+              recordsBox.appendChild(ul);
+            }
+
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, recordsBox);
+          }
+        } else if (r.type === "PENDING_HOLDS") {
+          if (r.status === "RESTRICTED") {
+            titleEl.textContent = "Hold Queue Status Restricted";
+            badgeEl.style.background = "#fee2e2";
+            badgeEl.style.color = "#991b1b";
+            badgeEl.textContent = "OPAC RESTRICTED";
+
+            const notice = document.createElement("div");
+            notice.className = "notice-box notice-warning";
+            notice.textContent = "🔒 Live hold queue status requires authenticated patron access.";
+
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, notice);
+          } else {
+            titleEl.textContent = `Active Holds & Reservations (${r.studentId || studentId})`;
+            badgeEl.className = "badge badge-sim";
+            badgeEl.textContent = "SIMULATION DATA";
+
+            const recordsBox = document.createElement("div");
+            recordsBox.style.marginTop = "6px";
+            recordsBox.style.fontSize = "13px";
+
+            const holds = r.holds || [];
+            const pending = r.pendingApprovals || [];
+            if (!holds.length && !pending.length) {
+              recordsBox.innerHTML = `<em>No active holds or pending reservations for <strong>${r.studentId || studentId}</strong>.</em>`;
+            } else {
+              const ul = document.createElement("ul");
+              ul.style.paddingLeft = "18px";
+              ul.style.margin = "4px 0";
+              for (const h of holds) {
+                const li = document.createElement("li");
+                li.innerHTML = `<strong>${h.bookTitle || h.title || h.catalogueId}</strong> (${h.edition || "Standard"}) — Queue position: <strong>#${h.queuePosition || 1}</strong> [Hold ID: ${h.id}]`;
+                ul.appendChild(li);
+              }
+              for (const p of pending) {
+                const li = document.createElement("li");
+                li.innerHTML = `<strong>${p.bookTitle || p.catalogueId}</strong> (${p.edition || "Standard"}) — <em>Pending human approval</em> [Approval ID: ${p.id}]`;
+                ul.appendChild(li);
+              }
+              recordsBox.appendChild(ul);
+            }
+
+            cardHeader.append(titleEl, badgeEl);
+            subtaskCard.append(cardHeader, recordsBox);
+          }
+        } else if (
+          r.type === "SEARCH" ||
+          r.type === "BOOK_SEARCH" ||
+          r.type === "SEARCH_BY_AUTHOR" ||
+          r.type === "SEARCH_BY_SUBJECT" ||
+          r.type === "SEARCH_BY_ISBN_OR_IDENTIFIER" ||
+          r.type === "NEW_ARRIVALS" ||
+          r.type === "BOOK_DETAILS"
+        ) {
+          const isNewArrivals = r.type === "NEW_ARRIVALS";
+          titleEl.textContent = isNewArrivals
+            ? "New Arrivals & Recently Acquired"
+            : (r.mode === "live_koha" ? "Live Koha Catalogue Search" : "Simulation Catalogue Search");
+          badgeEl.className = r.mode === "live_koha" ? "badge badge-live" : "badge badge-sim";
+          badgeEl.textContent = r.mode === "live_koha" ? "LIVE KOHA OPAC" : "SIMULATION";
+
+          cardHeader.append(titleEl, badgeEl);
+          subtaskCard.append(cardHeader);
+
+          const noticeBox = document.createElement("div");
+          noticeBox.className = "notice-box notice-info";
+
+          if (r.clarificationRequired) {
+            noticeBox.className = "notice-box notice-warning";
+            noticeBox.textContent = "Edition Clarification Required: " + (r.disambiguationMessage || r.message || "");
+            subtaskCard.appendChild(noticeBox);
+          } else if (r.selectionRequired) {
+            noticeBox.className = "notice-box notice-warning";
+            noticeBox.textContent = "Title Selection Required: " + (r.disambiguationMessage || r.message || "");
+            subtaskCard.appendChild(noticeBox);
+          } else if (!r.books || r.books.length === 0) {
+            noticeBox.textContent = r.mode === "live_koha"
+              ? "No matching records found on Koha OPAC."
+              : "No matching books found in simulation catalogue.";
+            subtaskCard.appendChild(noticeBox);
+          } else {
+            noticeBox.textContent = isNewArrivals
+              ? `Displaying ${r.books.length} newly acquired record(s) sorted by acquisition date.`
+              : `Found ${r.books.length} matching record(s) for "${r.query || transcript}".`;
+            subtaskCard.appendChild(noticeBox);
+          }
+
+          if (r.books && r.books.length > 0) {
+            const grid = document.createElement("div");
+            grid.className = "results-grid";
+            if (r.mode === "live_koha") {
+              for (const b of r.books) {
+                grid.appendChild(makeLiveBookCard(b));
+              }
+            } else {
+              for (const book of r.books) {
+                const card = makeBookCard(book);
+                const holdSection = card.querySelector(".hold-actions");
+                if (holdSection) {
+                  renderHoldSection(holdSection, book.id, book.title, book.edition, cachedStudentHolds, studentId);
+                }
+                grid.appendChild(card);
+              }
+            }
+            subtaskCard.appendChild(grid);
+          }
+        } else {
+          titleEl.textContent = "Library Information";
+          badgeEl.className = "badge badge-sim";
+          badgeEl.textContent = "INFO";
+
+          const msgP = document.createElement("p");
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = r.message || "Request processed.";
+
+          cardHeader.append(titleEl, badgeEl);
+          subtaskCard.append(cardHeader, msgP);
+        }
+
+        assistantMsg.body.appendChild(subtaskCard);
+      }
+
+      setVoiceStatus("Idle");
+      scrollToLatest();
+
+      if (shouldSpeak && task.summary) {
+        speakText(task.summary);
+      }
+    }
+
+    // =========================================================================
+    // Conversational Intent Evaluation (POST /voice/parse)
+    // =========================================================================
+    async function executeConversationalIntent(transcript, assistantMsg, shouldSpeak = false) {
+      setVoiceStatus("Processing");
+      assistantMsg.setStatus("Interpreting request…");
+
+      let data = null;
+      try {
+        const res = await fetch("/voice/parse", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transcript })
+        });
+        if (res.ok) {
+          data = await res.json();
+        }
+      } catch (err) {
+        console.warn("POST /voice/parse failed, using client fallback:", err);
+      }
+
+      if (!data && window.VoiceIntent && typeof window.VoiceIntent.parseVoiceIntent === "function") {
+        data = window.VoiceIntent.parseVoiceIntent(transcript);
+      }
+
+      if (!data) {
+        setVoiceStatus("Error", "Interpretation failed");
+        assistantMsg.setStatus("Could not interpret command. Please try typing your request directly.", true);
+        return;
+      }
+
+      const intents = Array.isArray(data.intents) && data.intents.length > 0
+        ? data.intents
+        : (data.primaryIntent ? [data.primaryIntent] : []);
+
+      // If single pure search-like intent with a query, execute search directly in conversation
+      const firstIntent = intents[0];
+      const isSearchLike = firstIntent && [
+        "SEARCH",
+        "BOOK_SEARCH",
+        "SEARCH_BY_AUTHOR",
+        "SEARCH_BY_SUBJECT",
+        "SEARCH_BY_ISBN_OR_IDENTIFIER",
+        "NEW_ARRIVALS",
+        "BOOK_DETAILS",
+        "AVAILABILITY"
+      ].includes(firstIntent.type);
+
+      if (!data.isCombined && intents.length === 1 && isSearchLike && firstIntent.query) {
+        await executeConversationalSearch(firstIntent.query, assistantMsg, shouldSpeak);
+        return;
+      }
+
+      // Render Intent Preview Cards
+      assistantMsg.body.replaceChildren();
+
+      if (data.isCombined) {
+        const combinedBanner = document.createElement("div");
+        combinedBanner.id = "voice-combined-notice";
+        combinedBanner.className = "notice-box notice-info";
+        combinedBanner.style.fontWeight = "600";
+        combinedBanner.textContent = `ℹ️ Combined request detected (${intents.length} separate requests). Each request is previewed below:`;
+        assistantMsg.body.appendChild(combinedBanner);
+      }
+
+      const isLiveSource = sourceSelect.value === "live";
+
+      for (let i = 0; i < intents.length; i++) {
+        const intent = intents[i];
+        const card = document.createElement("div");
+        card.id = "voice-intent-card-" + i;
+        card.className = "intent-preview-card";
+        card.dataset.intentIndex = String(i);
+        card.dataset.intentType = intent.type || "UNKNOWN";
+
+        const cardHeader = document.createElement("div");
+        cardHeader.style.display = "flex";
+        cardHeader.style.justifyContent = "space-between";
+        cardHeader.style.alignItems = "center";
+        cardHeader.style.gap = "8px";
+        cardHeader.style.marginBottom = "6px";
+        cardHeader.style.flexWrap = "wrap";
+
+        const title = document.createElement("h4");
+        const badge = document.createElement("span");
+        badge.className = "badge";
+
+        if (intent.type === "RENEWAL" || intent.type === "RENEWAL_REQUEST") {
+          title.textContent = "Renewal Request Preview";
+          badge.className = "badge badge-preview";
+          badge.textContent = "PREVIEW ONLY";
+
+          const targetP = document.createElement("p");
+          targetP.style.margin = "4px 0";
+          targetP.style.fontSize = "13px";
+          targetP.innerHTML = `<strong>Target:</strong> "${intent.target || intent.query || "my library books"}"`;
+
+          const msgP = document.createElement("p");
+          msgP.className = "voice-intent-message";
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = intent.message || "Renewal intent detected.";
+
+          const notice = document.createElement("div");
+          notice.className = "notice-box notice-warning";
+          notice.textContent = "⚠️ Safety Boundary: Spoken or conversational renewals are strictly preview-only. Voice commands never submit renewal requests or approve loans automatically. Please check eligibility in the Loans tab and click 'Approve renewal' explicitly.";
+
+          const linkLoansBtn = document.createElement("button");
+          linkLoansBtn.type = "button";
+          linkLoansBtn.style.marginTop = "6px";
+          linkLoansBtn.textContent = "View Loans & Approvals →";
+          linkLoansBtn.addEventListener("click", () => switchView("loans"));
+
+          cardHeader.append(title, badge);
+          card.append(cardHeader, targetP, msgP, notice, linkLoansBtn);
+        } else if (intent.type === "HOLD" || intent.type === "HOLD_REQUEST") {
+          title.textContent = "Hold Request Preview";
+          badge.className = "badge badge-preview";
+          badge.textContent = "PREVIEW ONLY";
+
+          const targetP = document.createElement("p");
+          targetP.style.margin = "4px 0";
+          targetP.style.fontSize = "13px";
+          targetP.innerHTML = `<strong>Target:</strong> "${intent.target || intent.query || "DBMS textbook"}"`;
+
+          const msgP = document.createElement("p");
+          msgP.className = "voice-intent-message";
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = intent.message || "Hold intent detected.";
+
+          const notice = document.createElement("div");
+          notice.className = "notice-box notice-warning";
+          notice.textContent = "⚠️ Safety Boundary: Spoken or conversational holds are strictly preview-only. Voice commands never place holds automatically. If multiple editions exist, edition selection is required. Please search the catalogue to select your edition and click 'Request hold' explicitly.";
+
+          cardHeader.append(title, badge);
+          card.append(cardHeader, targetP, msgP, notice);
+        } else if (intent.type === "PURCHASED_BOOKS") {
+          title.textContent = "Purchased / Acquisition Records";
+          badge.className = "badge";
+          badge.style.background = "#fee2e2";
+          badge.style.color = "#991b1b";
+          badge.textContent = "UNAVAILABLE_FROM_PUBLIC_OPAC";
+
+          const msgP = document.createElement("p");
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = intent.message || "Internal purchase and invoice records are restricted to the staff administration system.";
+
+          const notice = document.createElement("div");
+          notice.className = "notice-box notice-warning";
+          notice.textContent = "🔒 Internal purchase and invoice records are restricted to staff systems and are UNAVAILABLE_FROM_PUBLIC_OPAC. The public catalogue provides New Arrivals and recently acquired books instead.";
+
+          const searchNewBtn = document.createElement("button");
+          searchNewBtn.type = "button";
+          searchNewBtn.style.marginTop = "6px";
+          searchNewBtn.textContent = "Search New Arrivals Instead →";
+          searchNewBtn.addEventListener("click", () => {
+            const newAssistantMsg = createAssistantMessage();
+            executeConversationalSearch("new arrivals", newAssistantMsg, isVoiceModeOn);
+          });
+
+          cardHeader.append(title, badge);
+          card.append(cardHeader, msgP, notice, searchNewBtn);
+        } else if (
+          intent.type === "PATRON_LOANS" ||
+          intent.type === "DUE_DATE_LOOKUP" ||
+          intent.type === "OVERDUE_BOOKS" ||
+          intent.type === "RENEWAL_ELIGIBILITY" ||
+          intent.type === "PENDING_HOLDS"
+        ) {
+          if (isLiveSource) {
+            title.textContent = "Patron Account Restricted";
+            badge.className = "badge";
+            badge.style.background = "#fee2e2";
+            badge.style.color = "#991b1b";
+            badge.textContent = "LIVE_PATRON_ACCESS_UNAVAILABLE";
+
+            const msgP = document.createElement("p");
+            msgP.style.margin = "4px 0";
+            msgP.style.fontSize = "13px";
+            msgP.textContent = intent.message || "Live patron account access is unavailable without authenticated session.";
+
+            const notice = document.createElement("div");
+            notice.className = "notice-box notice-warning";
+            notice.textContent = "🔒 Secure patron account data is unavailable on the public Koha OPAC without an authenticated HTTPS patron session. Switch to Simulation mode to inspect student loans, due dates, and hold queues.";
+
+            cardHeader.append(title, badge);
+            card.append(cardHeader, msgP, notice);
+          } else {
+            let label = "Active Simulated Loans";
+            if (intent.type === "OVERDUE_BOOKS") label = "Overdue Loans & Fine Assessment";
+            else if (intent.type === "DUE_DATE_LOOKUP") label = "Loan Due Date Lookup";
+            else if (intent.type === "RENEWAL_ELIGIBILITY") label = "Renewal Eligibility Preview";
+            else if (intent.type === "PENDING_HOLDS") label = "Active Hold Queue Status";
+
+            title.textContent = label;
+            badge.className = "badge badge-sim";
+            badge.textContent = "SIMULATION DATA";
+
+            const msgP = document.createElement("p");
+            msgP.style.margin = "4px 0";
+            msgP.style.fontSize = "13px";
+            msgP.textContent = intent.message || "Simulated patron account details.";
+
+            const notice = document.createElement("div");
+            notice.className = "notice-box notice-info";
+            notice.textContent = "ℹ️ In simulation mode, patron loans and hold requests are tracked per student ID. Overdue fines are calculated at ₹5/day in INR. Check renewal eligibility or inspect your due dates in the Loans & Approvals tab.";
+
+            const recordsBox = document.createElement("div");
+            recordsBox.style.marginTop = "8px";
+            recordsBox.style.padding = "8px";
+            recordsBox.style.background = "#f8fafc";
+            recordsBox.style.border = "1px solid #e2e8f0";
+            recordsBox.style.borderRadius = "6px";
+            recordsBox.style.fontSize = "13px";
+            recordsBox.textContent = "Loading simulated records…";
+
+            const currentStudentId = (studentInput && studentInput.value.trim()) || "STU-001";
+            if (intent.type === "PENDING_HOLDS") {
+              fetchStudentHolds(currentStudentId).then(data => {
+                recordsBox.replaceChildren();
+                const holds = data.holds || [];
+                const pending = data.pending || [];
+                if (!holds.length && !pending.length) {
+                  recordsBox.innerHTML = `<em>No active holds or pending reservations for <strong>${currentStudentId}</strong>.</em>`;
+                  return;
+                }
+                const ul = document.createElement("ul");
+                ul.style.paddingLeft = "18px";
+                ul.style.margin = "4px 0";
+                for (const h of holds) {
+                  const li = document.createElement("li");
+                  li.innerHTML = `<strong>${h.bookTitle || h.title || h.catalogueId}</strong> (${h.edition || "Standard"}) — Queue position: <strong>#${h.queuePosition || 1}</strong> [Hold: ${h.id}]`;
+                  ul.appendChild(li);
+                }
+                for (const p of pending) {
+                  const li = document.createElement("li");
+                  li.innerHTML = `<strong>${p.bookTitle || p.catalogueId}</strong> (${p.edition || "Standard"}) — <em>Pending human approval</em> [Approval ID: ${p.id}]`;
+                  ul.appendChild(li);
+                }
+                recordsBox.appendChild(ul);
+              }).catch(() => {
+                recordsBox.textContent = "Unable to load simulated holds.";
+              });
+            } else {
+              fetch("/books?studentId=" + encodeURIComponent(currentStudentId) + "&_=" + Date.now(), { cache: "no-store" })
+                .then(r => r.json())
+                .then(data => {
+                  recordsBox.replaceChildren();
+                  const books = data.books || [];
+                  if (!books.length) {
+                    recordsBox.innerHTML = `<em>No active loans for <strong>${currentStudentId}</strong>.</em>`;
+                    return;
+                  }
+                  let display = books;
+                  if (intent.type === "OVERDUE_BOOKS") {
+                    display = books.filter(b => b.isOverdue || (b.dueDate && new Date(b.dueDate) < new Date()));
+                    if (!display.length) {
+                      recordsBox.innerHTML = `<em>Good news! <strong>${currentStudentId}</strong> has 0 overdue books and ₹0 outstanding fines.</em>`;
+                      return;
+                    }
+                  } else if (intent.type === "DUE_DATE_LOOKUP" && intent.target && intent.target !== "my books") {
+                    const t = intent.target.toLowerCase();
+                    const filtered = books.filter(b => (b.title && b.title.toLowerCase().includes(t)) || (b.id && b.id.toLowerCase().includes(t)));
+                    if (filtered.length) display = filtered;
+                  }
+                  const ul = document.createElement("ul");
+                  ul.style.paddingLeft = "18px";
+                  ul.style.margin = "4px 0";
+                  for (const b of display) {
+                    const li = document.createElement("li");
+                    const overdueBadge = b.isOverdue ? `<span style="color:#b91c1c;font-weight:600;">(OVERDUE - Fine ₹5/day)</span>` : "";
+                    const renewalsBadge = `(Renewals: ${b.renewalsCount || 0}/${b.renewalLimit || 2})`;
+                    li.innerHTML = `<strong>${b.title}</strong> [${b.id}] — Due: <strong>${b.dueDate || "N/A"}</strong> ${renewalsBadge} ${overdueBadge}`;
+                    ul.appendChild(li);
+                  }
+                  recordsBox.appendChild(ul);
+                }).catch(() => {
+                  recordsBox.textContent = "Unable to load simulated loans.";
+                });
+            }
+
+            const linkLoansBtn = document.createElement("button");
+            linkLoansBtn.type = "button";
+            linkLoansBtn.style.marginTop = "6px";
+            linkLoansBtn.textContent = "Open Loans & Approvals Dashboard →";
+            linkLoansBtn.addEventListener("click", () => switchView("loans"));
+
+            cardHeader.append(title, badge);
+            card.append(cardHeader, msgP, notice, recordsBox, linkLoansBtn);
+          }
+        } else if (intent.type === "HOLD_CANCELLATION") {
+          title.textContent = "Hold Cancellation Request";
+          badge.className = "badge badge-preview";
+          badge.textContent = "PREVIEW ONLY";
+
+          const targetP = document.createElement("p");
+          targetP.style.margin = "4px 0";
+          targetP.style.fontSize = "13px";
+          targetP.innerHTML = `<strong>Target:</strong> "${intent.target || "active hold"}"`;
+
+          const msgP = document.createElement("p");
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = intent.message || "Hold cancellation request detected.";
+
+          const notice = document.createElement("div");
+          notice.className = "notice-box notice-warning";
+          notice.textContent = "⚠️ Safety Boundary: Hold cancellation requires explicit patron interaction and cannot be performed automatically by voice. Switch to the Holds tab to review and cancel your pending reservations.";
+
+          const linkHoldsBtn = document.createElement("button");
+          linkHoldsBtn.type = "button";
+          linkHoldsBtn.style.marginTop = "6px";
+          linkHoldsBtn.textContent = "View Active Holds →";
+          linkHoldsBtn.addEventListener("click", () => switchView("holds"));
+
+          cardHeader.append(title, badge);
+          card.append(cardHeader, targetP, msgP, notice, linkHoldsBtn);
+        } else if (intent.type === "HOLD_ELIGIBILITY") {
+          title.textContent = "Hold Policy & Eligibility";
+          badge.className = "badge";
+          badge.style.background = "#e0f2fe";
+          badge.style.color = "#0369a1";
+          badge.textContent = "POLICY INFO";
+
+          const msgP = document.createElement("p");
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = intent.message || "Hold eligibility rules.";
+
+          const notice = document.createElement("div");
+          notice.className = "notice-box notice-info";
+          notice.textContent = "ℹ️ Library Hold Policy: Holds are intended for books that are currently issued to other students or reserved. Available books on the shelf can be checked out directly at the circulation desk without placing a hold queue entry.";
+
+          cardHeader.append(title, badge);
+          card.append(cardHeader, msgP, notice);
+        } else if (intent.type === "ACCOUNT_HELP") {
+          title.textContent = "Library Account & Security Help";
+          badge.className = "badge";
+          badge.style.background = "#fef3c7";
+          badge.style.color = "#92400e";
+          badge.textContent = "HELP DESK";
+
+          const msgP = document.createElement("p");
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = intent.message || "Card suspension and PIN resets require authentication at the circulation desk.";
+
+          const notice = document.createElement("div");
+          notice.className = "notice-box notice-warning";
+          notice.textContent = "🔒 Security Protection: Card loss reporting and credential resets require official identity verification with library staff or through your university's central single-sign-on portal. Voice commands cannot modify patron credentials.";
+
+          cardHeader.append(title, badge);
+          card.append(cardHeader, msgP, notice);
+        } else if (intent.type === "LIBRARY_INFO") {
+          title.textContent = "Library Information & Hours";
+          badge.className = "badge";
+          badge.style.background = "#e0f2fe";
+          badge.style.color = "#0369a1";
+          badge.textContent = "LIBRARY INFO";
+
+          const msgP = document.createElement("p");
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = intent.message || "Library schedule: Monday to Friday 08:30 – 20:00, Saturday 09:00 – 17:00.";
+
+          const notice = document.createElement("div");
+          notice.className = "notice-box notice-info";
+          notice.textContent = "ℹ️ Standard Hours: Monday–Friday 08:30 to 20:00 IST. Saturday: 09:00 to 17:00 IST. Sunday & Public Holidays: Closed. The digital public OPAC catalogue remains accessible 24/7.";
+
+          cardHeader.append(title, badge);
+          card.append(cardHeader, msgP, notice);
+        } else if (intent.type === "RENEWAL_POLICY") {
+          title.textContent = "Library Renewal Policy";
+          badge.className = "badge";
+          badge.style.background = "#e0f2fe";
+          badge.style.color = "#0369a1";
+          badge.textContent = "POLICY INFO";
+
+          const msgP = document.createElement("p");
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = intent.message || "Standard loans may be renewed up to 2 times for 14 days each, provided no hold queue exists.";
+
+          const notice = document.createElement("div");
+          notice.className = "notice-box notice-info";
+          notice.textContent = "ℹ️ Rules: (1) Maximum 2 renewals per title. (2) Renewal is blocked if another student has placed a hold reservation (TC2). (3) Overdue books accrue ₹5/day fine and must be cleared prior to renewal (TC4).";
+
+          cardHeader.append(title, badge);
+          card.append(cardHeader, msgP, notice);
+        } else if (intent.type === "PATRON_ACCOUNT") {
+          title.textContent = "Patron Account Summary";
+          badge.className = "badge badge-sim";
+          badge.textContent = isLiveSource ? "OPAC RESTRICTED" : "SIMULATION ACCOUNT";
+
+          const msgP = document.createElement("p");
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = intent.message || "Patron account details.";
+
+          const notice = document.createElement("div");
+          notice.className = isLiveSource ? "notice-box notice-warning" : "notice-box notice-info";
+          notice.textContent = isLiveSource
+            ? "🔒 Live Koha OPAC patron account access is UNAVAILABLE without an authenticated session. Switch to Simulation mode to inspect student loans and holds."
+            : "ℹ️ Student account overview: Check your current loans, due dates, fines, and pending hold requests in the Loans & Approvals tab.";
+
+          const linkLoansBtn = document.createElement("button");
+          linkLoansBtn.type = "button";
+          linkLoansBtn.style.marginTop = "6px";
+          linkLoansBtn.textContent = "Open Loans & Approvals Dashboard →";
+          linkLoansBtn.addEventListener("click", () => switchView("loans"));
+
+          cardHeader.append(title, badge);
+          card.append(cardHeader, msgP, notice, linkLoansBtn);
+        } else if (
+          intent.type === "SEARCH" ||
+          intent.type === "BOOK_SEARCH" ||
+          intent.type === "SEARCH_BY_AUTHOR" ||
+          intent.type === "SEARCH_BY_SUBJECT" ||
+          intent.type === "SEARCH_BY_ISBN_OR_IDENTIFIER" ||
+          intent.type === "NEW_ARRIVALS" ||
+          intent.type === "BOOK_DETAILS" ||
+          intent.type === "AVAILABILITY"
+        ) {
+          let searchTitle = "Catalogue Search Request";
+          if (intent.type === "SEARCH_BY_AUTHOR") searchTitle = "Author Catalogue Search";
+          else if (intent.type === "SEARCH_BY_SUBJECT") searchTitle = "Subject Catalogue Search";
+          else if (intent.type === "SEARCH_BY_ISBN_OR_IDENTIFIER") searchTitle = "Identifier / ISBN Lookup";
+          else if (intent.type === "NEW_ARRIVALS") searchTitle = "New Arrivals Search";
+          else if (intent.type === "BOOK_DETAILS") searchTitle = "Bibliographic Details Request";
+          else if (intent.type === "AVAILABILITY") searchTitle = "Item Availability Check";
+
+          title.textContent = searchTitle;
+          badge.className = "badge badge-live";
+          badge.textContent = "SAFE GET QUERY";
+
+          const queryP = document.createElement("p");
+          queryP.style.margin = "4px 0";
+          queryP.style.fontSize = "13px";
+          queryP.innerHTML = `<strong>Target query:</strong> "${intent.query || ""}"`;
+
+          const msgP = document.createElement("p");
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = intent.message || `Ready to search for "${intent.query}".`;
+
+          const searchBtn = document.createElement("button");
+          searchBtn.type = "button";
+          searchBtn.style.marginTop = "6px";
+          searchBtn.textContent = `Search Catalogue for "${intent.query}" →`;
+          searchBtn.addEventListener("click", () => {
+            const newAssistantMsg = createAssistantMessage();
+            executeConversationalSearch(intent.query, newAssistantMsg, isVoiceModeOn);
+          });
+
+          cardHeader.append(title, badge);
+          card.append(cardHeader, queryP, msgP, searchBtn);
+        } else {
+          title.textContent = "Clarification Needed";
+          badge.className = "badge";
+          badge.style.background = "#fee2e2";
+          badge.style.color = "#991b1b";
+          badge.textContent = "CLARIFICATION";
+
+          const msgP = document.createElement("p");
+          msgP.style.margin = "4px 0";
+          msgP.style.fontSize = "13px";
+          msgP.textContent = intent.message || "I did not recognize that command. Please specify a catalogue search, renewal request, or hold.";
+
+          cardHeader.append(title, badge);
+          card.append(cardHeader, msgP);
+        }
+
+        assistantMsg.body.appendChild(card);
+      }
+
+      setVoiceStatus("Idle");
+      scrollToLatest();
+
+      if (shouldSpeak && data.spokenSummary) {
+        speakText(data.spokenSummary);
+      }
+    }
+
+    // =========================================================================
+    // Conversational Catalogue Search Execution
+    // =========================================================================
+    async function executeConversationalSearch(query, assistantMsg, shouldSpeak = false) {
+      if (assistantMsg && typeof assistantMsg.setTaskStatus === "function") {
+        assistantMsg.setTaskStatus("PROCESSING");
+      }
+      setVoiceStatus("Processing");
+      const isLive = sourceSelect.value === "live";
+
+      assistantMsg.setStatus(
+        isLive ? `Querying live Koha OPAC for "${query}"…` : `Searching simulation catalogue for "${query}"…`
+      );
+
+      try {
+        const endpoint = isLive
+          ? "/catalogue/live-search?q=" + encodeURIComponent(query)
+          : "/catalogue/search?q=" + encodeURIComponent(query);
+
+        const response = await fetch(endpoint);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || ("Search request failed with status " + response.status));
+        }
+
+        if (data.mode === "live_koha") {
+          const safetyLabel = (data.safetyMode || data.operationMode || "read_only").replace("_", "-");
+          assistantMsg.badge.textContent = "Mode: Live Koha OPAC (" + safetyLabel.toUpperCase() + ")";
+          assistantMsg.badge.className = "badge badge-live";
+        }
+
+        assistantMsg.body.replaceChildren();
+
+        // 1. Live Koha diagnostics
+        if (isLive) {
+          const status = data.status || "UNKNOWN";
+          if (status === "NO_RESULTS") {
+            assistantMsg.setStatus("No results: " + (data.message || "No records matched your search query on Koha OPAC."));
+            if (shouldSpeak) speakText("In the simulation, no records matched your live search query.");
+            return;
+          }
+          if (status === "INSUFFICIENT_EVIDENCE") {
+            let msg = "Insufficient Evidence: " + (data.message || "No records extracted, and no-results indicators were inconclusive.");
+            if (data.pagePreview) msg += ' (Preview: "' + data.pagePreview + '")';
+            assistantMsg.setStatus(msg, true);
+            if (shouldSpeak) speakText("In the simulation, search results were inconclusive.");
+            return;
+          }
+          if (status === "UNEXPECTED_PAGE") {
+            assistantMsg.setStatus("Unexpected Page Structure: " + (data.message || "Page did not match recognized Koha OPAC layout."), true);
+            return;
+          }
+          if (status === "PARSING_DIAGNOSTIC_RESULTS_PRESENT") {
+            assistantMsg.setStatus("Parsing Diagnostic: " + (data.message || "Results appear present in DOM, but bibliographic records could not be structured."), true);
+            return;
+          }
+          if (status === "CAPTCHA_DETECTED") {
+            assistantMsg.setStatus("Access Gate Blocked: CAPTCHA or bot challenge detected on Koha OPAC.", true);
+            return;
+          }
+          if (status === "HTTP_ERROR" || status === "ADAPTER_ERROR") {
+            assistantMsg.setStatus("Live Search Error: " + (data.error || data.message || "Error communicating with Koha OPAC."), true);
+            return;
+          }
+        }
+
+        // 2. Disambiguation feedback
+        const feedbackBox = document.createElement("div");
+        feedbackBox.className = "notice-box notice-info";
+
+        if (data.clarificationRequired) {
+          feedbackBox.className = "notice-box notice-warning";
+          feedbackBox.textContent = "Edition Clarification Required: " + data.message;
+          assistantMsg.body.appendChild(feedbackBox);
+        } else if (data.selectionRequired) {
+          feedbackBox.textContent = "Title Selection Required: " + data.message;
+          assistantMsg.body.appendChild(feedbackBox);
+        } else if (!data.matches || data.matches.length === 0) {
+          assistantMsg.setStatus(isLive ? "No matching records found on Koha OPAC." : "No matching books found in simulation catalogue.");
+          if (shouldSpeak) speakText("In the simulation, no matching books were found.");
+          return;
+        } else {
+          feedbackBox.textContent = data.message || `Found ${data.matches.length} matching record(s).`;
+          assistantMsg.body.appendChild(feedbackBox);
+        }
+
+        // 3. Render Book Cards
+        const grid = document.createElement("div");
+        grid.className = "results-grid";
+
+        if (isLive) {
+          for (const record of data.matches || []) {
+            grid.appendChild(makeLiveBookCard(record));
+          }
+        } else {
+          const studentInput = document.getElementById("issue-student-id");
+          const studentId = (studentInput && studentInput.value.trim()) || "STU-001";
+          const studentHolds = await fetchStudentHolds(studentId);
+
+          for (const book of data.matches || []) {
+            const card = makeBookCard(book);
+            const holdSection = card.querySelector(".hold-actions");
+            if (holdSection) {
+              renderHoldSection(holdSection, book.id, book.title, book.edition, studentHolds, studentId);
+            }
+            grid.appendChild(card);
+          }
+        }
+
+        assistantMsg.body.appendChild(grid);
+        scrollToLatest();
+        setVoiceStatus("Idle");
+        if (assistantMsg && typeof assistantMsg.setTaskStatus === "function") {
+          assistantMsg.setTaskStatus("COMPLETED");
+          if (typeof assistantMsg.hideControls === "function") assistantMsg.hideControls();
+        }
+
+        if (shouldSpeak) {
+          const isDiscovery = /\b(?:new\s+arrivals?|recently\s+(?:added|acquired)|latest)\b/i.test(query);
+          if (isDiscovery) {
+            speakText(`In the simulation, displaying ${data.matches ? data.matches.length : 0} newly acquired books.`);
+          } else {
+            speakText(`In the simulation, searching catalogue for ${query}. Found ${data.matches ? data.matches.length : 0} records.`);
+          }
+        }
+      } catch (err) {
+        setVoiceStatus("Error", "Search failed");
+        if (assistantMsg && typeof assistantMsg.setTaskStatus === "function") {
+          assistantMsg.setTaskStatus("FAILED");
+        }
+        assistantMsg.setStatus((isLive ? "Live Koha catalogue search failed: " : "Catalogue search failed: ") + err.message, true);
+      }
+    }
+
+    // =========================================================================
+    // Card Rendering Helpers (Preserving Existing Contracts & Verification)
+    // =========================================================================
+    function makeBookCard(book, isLoan = false) {
+      const card = document.createElement("article");
+      card.className = "book";
+
+      if (isLoan && Number(book.renewalsUsed) === 0 && Number(book.renewalLimit) === 0) {
+        card.hidden = true;
+      }
+
+      const title = document.createElement("h3");
+      title.textContent = book.title || "Untitled book";
+      card.appendChild(title);
+
+      const details = [
+        book.author ? "Author: " + book.author : "",
+        book.edition ? "Edition: " + book.edition : "",
+        book.isbn ? "ISBN: " + book.isbn : "",
+        book.publisher ? "Publisher: " + book.publisher + (book.publicationYear ? " (" + book.publicationYear + ")" : "") : (book.publicationYear ? "Year: " + book.publicationYear : ""),
+        book.callNumber ? "Call Number: " + book.callNumber : "",
+        book.acquisitionDate ? "Acquired: " + book.acquisitionDate : "",
+        book.availableCopies !== undefined ? "Availability: " + book.availableCopies + " available (total: " + (book.totalCopies || book.availableCopies) + ")" : "",
+        isLoan && book.dueDate ? "Due date: " + book.dueDate : "",
+        isLoan ? "Renewals used: " + book.renewalsUsed + " / " + book.renewalLimit : ""
+      ].filter(Boolean);
+
+      for (const detail of details) {
+        const p = document.createElement("p");
+        p.textContent = detail;
+        card.appendChild(p);
+      }
+
+      const id = document.createElement("p");
+      id.className = "subtitle";
+      id.textContent = "Record ID: " + (book.id || "N/A");
+      card.appendChild(id);
+
+      if (isLoan) {
+        const actions = document.createElement("div");
+        actions.className = "renewal-actions";
+        actions.style.marginTop = "10px";
+
+        const checkButton = document.createElement("button");
+        checkButton.type = "button";
+        checkButton.textContent = "Check eligibility";
+        checkButton.addEventListener("click", () => checkRenewal(book.id, actions));
+        actions.appendChild(checkButton);
+
+        const result = document.createElement("p");
+        result.className = "renewal-result";
+        result.setAttribute("role", "status");
+        result.hidden = true;
+        result.style.marginTop = "6px";
+        result.style.fontSize = "13px";
+        actions.appendChild(result);
+
+        if (book.lastRenewalApprovalId) {
+          const undoButton = document.createElement("button");
+          undoButton.type = "button";
+          undoButton.className = "undo-renewal";
+          undoButton.style.marginLeft = "8px";
+          undoButton.textContent = "Undo renewal";
+          undoButton.addEventListener("click", () =>
+            undoRenewal(book.lastRenewalApprovalId, actions, undoButton));
+          actions.appendChild(undoButton);
+        }
+
+        card.appendChild(actions);
+      } else if (book.id) {
+        const holdSection = document.createElement("div");
+        holdSection.className = "hold-actions";
+        holdSection.dataset.catalogueId = book.id;
+        holdSection.dataset.bookTitle = book.title || "";
+        holdSection.dataset.edition = book.edition || "";
+        holdSection.style.marginTop = "10px";
+        holdSection.style.paddingTop = "10px";
+        holdSection.style.borderTop = "1px solid var(--border-light)";
+
+        const requestHoldBtn = document.createElement("button");
+        requestHoldBtn.type = "button";
+        requestHoldBtn.className = "request-hold-btn";
+        requestHoldBtn.textContent = "Request hold";
+        requestHoldBtn.addEventListener("click", () =>
+          requestHold(book.id, holdSection, book.title, book.edition));
+
+        const holdStatus = document.createElement("p");
+        holdStatus.className = "hold-status";
+        holdStatus.setAttribute("role", "status");
+        holdStatus.hidden = true;
+        holdStatus.style.fontSize = "0.9rem";
+        holdStatus.style.marginTop = "6px";
+
+        holdSection.append(requestHoldBtn, holdStatus);
+        card.appendChild(holdSection);
+      }
+
+      return card;
+    }
+
+    function makeLiveBookCard(record) {
+      const card = document.createElement("article");
+      card.className = "book live-book";
+
+      const title = document.createElement("h3");
+      title.textContent = record.title || "Untitled record";
+      card.appendChild(title);
+
+      const missing = Array.isArray(record.missingFields) ? record.missingFields : [];
+
+      const authorP = document.createElement("p");
+      const hasAuthor = record.author && record.author !== "Unknown author" && !missing.includes("author");
+      authorP.textContent = hasAuthor ? "Author: " + record.author : "Author: Unconfirmed";
+      if (!hasAuthor) authorP.style.color = "var(--muted)";
+      card.appendChild(authorP);
+
+      const editionP = document.createElement("p");
+      const hasEdition = record.edition && record.edition !== "Unspecified edition" && !missing.includes("edition");
+      editionP.textContent = hasEdition ? "Edition: " + record.edition : "Edition: Unconfirmed";
+      if (!hasEdition) editionP.style.color = "var(--muted)";
+      card.appendChild(editionP);
+
+      const availP = document.createElement("p");
+      const hasAvail = record.availability && record.availability !== "Availability unconfirmed" && !missing.includes("availability");
+      availP.textContent = hasAvail ? "Availability: " + record.availability : "Availability: Unconfirmed";
+      if (!hasAvail) availP.style.color = "var(--muted)";
+      card.appendChild(availP);
+
+      const idP = document.createElement("p");
+      idP.className = "subtitle";
+      idP.textContent = "Bibliographic ID: " + (record.id || (record.biblionumber ? "KOHA-BIB-" + record.biblionumber : "Unconfirmed"));
+      card.appendChild(idP);
+
+      if (record.retrievalTimestamp) {
+        const tsP = document.createElement("p");
+        tsP.className = "subtitle";
+        tsP.textContent = "Retrieved at: " + record.retrievalTimestamp;
+        card.appendChild(tsP);
+      }
+
+      if (record.sourceUrl) {
+        const linkP = document.createElement("p");
+        linkP.style.marginTop = "6px";
+        const link = document.createElement("a");
+        link.href = record.sourceUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "View on Koha OPAC ↗";
+        linkP.appendChild(link);
+        card.appendChild(linkP);
+      }
+
+      const liveNotice = document.createElement("p");
+      liveNotice.style.fontSize = "12px";
+      liveNotice.style.color = "var(--muted)";
+      liveNotice.style.marginTop = "6px";
+      liveNotice.textContent = "Live hold placement not available (Koha OPAC read-only mode).";
+      card.appendChild(liveNotice);
+
+      return card;
+    }
+
+    // =========================================================================
+    // Simulation Hold Workflows & Human Approvals
+    // =========================================================================
+    async function fetchStudentHolds(studentId) {
+      if (!studentId) return { holds: [], pending: [] };
+      try {
+        const res = await fetch("/holds?studentId=" + encodeURIComponent(studentId) + "&_=" + Date.now(), { cache: "no-store" });
+        if (!res.ok) return { holds: [], pending: [] };
+        const data = await res.json();
+        return {
+          holds: Array.isArray(data.holds) ? data.holds : [],
+          pending: Array.isArray(data.pending) ? data.pending : []
+        };
+      } catch {
+        return { holds: [], pending: [] };
+      }
+    }
+
+    function renderHoldSection(holdSection, catalogueId, bookTitle, edition, studentHolds, studentId) {
+      holdSection.replaceChildren();
+
+      const activeHold = (studentHolds && Array.isArray(studentHolds.holds))
+        ? studentHolds.holds.find(h => h.catalogueId === catalogueId && h.status === "active")
+        : null;
+
+      if (activeHold) {
+        const statusP = document.createElement("p");
+        statusP.className = "hold-status";
+        statusP.style.color = "var(--navy)";
+        statusP.style.fontWeight = "600";
+        statusP.style.fontSize = "0.9rem";
+        statusP.style.margin = "4px 0";
+        statusP.textContent = `Active simulated hold: ${activeHold.id} (Queue position: #${activeHold.queuePosition})`;
+
+        const noticeP = document.createElement("p");
+        noticeP.className = "subtitle";
+        noticeP.textContent = `Active hold already recorded for ${studentId}.`;
+
+        holdSection.append(statusP, noticeP);
+        return;
+      }
+
+      const pendingApproval = (studentHolds && Array.isArray(studentHolds.pending))
+        ? studentHolds.pending.find(p => p.catalogueId === catalogueId && p.status === "pending")
+        : null;
+
+      if (pendingApproval) {
+        const approvalId = pendingApproval.approvalId || pendingApproval.id;
+        const statusP = document.createElement("p");
+        statusP.className = "hold-status";
+        statusP.style.color = "#8a6d3b";
+        statusP.style.fontWeight = "600";
+        statusP.style.fontSize = "0.9rem";
+        statusP.style.margin = "4px 0";
+        statusP.textContent = `Hold approval pending (ID: ${approvalId}). Human approval required.`;
+
+        const btnContainer = document.createElement("div");
+        btnContainer.style.marginTop = "6px";
+
+        const approveBtn = document.createElement("button");
+        approveBtn.type = "button";
+        approveBtn.className = "approval-action";
+        approveBtn.style.marginRight = "8px";
+        approveBtn.textContent = "Approve hold";
+        approveBtn.addEventListener("click", () =>
+          handleHoldApproval(approvalId, "approve", holdSection, catalogueId));
+
+        const rejectBtn = document.createElement("button");
+        rejectBtn.type = "button";
+        rejectBtn.className = "approval-action";
+        rejectBtn.textContent = "Reject hold";
+        rejectBtn.addEventListener("click", () =>
+          handleHoldApproval(approvalId, "reject", holdSection, catalogueId));
+
+        btnContainer.append(approveBtn, rejectBtn);
+        holdSection.append(statusP, btnContainer);
+        return;
+      }
+
+      const requestHoldBtn = document.createElement("button");
+      requestHoldBtn.type = "button";
+      requestHoldBtn.className = "request-hold-btn";
+      requestHoldBtn.textContent = "Request hold";
+      requestHoldBtn.addEventListener("click", () =>
+        requestHold(catalogueId, holdSection, bookTitle, edition));
+
+      const holdStatus = document.createElement("p");
+      holdStatus.className = "hold-status";
+      holdStatus.setAttribute("role", "status");
+      holdStatus.hidden = true;
+      holdStatus.style.fontSize = "0.9rem";
+      holdStatus.style.marginTop = "6px";
+
+      holdSection.append(requestHoldBtn, holdStatus);
+    }
+
+    async function requestHold(catalogueId, holdSection, bookTitle, edition) {
+      const holdStatus = holdSection.querySelector(".hold-status");
+      const requestHoldBtn = holdSection.querySelector(".request-hold-btn");
+      if (requestHoldBtn) requestHoldBtn.disabled = true;
+
+      if (holdStatus) {
+        holdStatus.hidden = false;
+        holdStatus.textContent = "Creating hold approval request…";
+      }
+
+      const studentInput = document.getElementById("issue-student-id");
+      const studentId = (studentInput && studentInput.value.trim()) || "STU-001";
+
+      if (!holdSection.dataset.holdRequestId) {
+        holdSection.dataset.holdRequestId = "hold-req-" + catalogueId + "-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+      }
+      const requestId = holdSection.dataset.holdRequestId;
+
+      try {
+        const response = await fetch("/request-hold", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requestId, studentId, catalogueId })
+        });
+        const data = await response.json();
+
+        if (response.status === 409 && data.holdId) {
+          holdSection.replaceChildren();
+          const statusP = document.createElement("p");
+          statusP.className = "hold-status";
+          statusP.style.color = "var(--navy)";
+          statusP.style.fontWeight = "600";
+          statusP.style.fontSize = "0.9rem";
+          statusP.textContent = `Active simulated hold: ${data.holdId} (Queue position: #${data.queuePosition || 1})`;
+          holdSection.append(statusP);
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to create hold request.");
+        }
+
+        holdSection.replaceChildren();
+
+        const statusP = document.createElement("p");
+        statusP.className = "hold-status";
+        statusP.style.color = "#8a6d3b";
+        statusP.style.fontWeight = "600";
+        statusP.style.fontSize = "0.9rem";
+        statusP.textContent = `Hold approval pending (ID: ${data.approvalId}). Human approval required.`;
+
+        const btnContainer = document.createElement("div");
+        btnContainer.style.marginTop = "6px";
+
+        const approveBtn = document.createElement("button");
+        approveBtn.type = "button";
+        approveBtn.style.marginRight = "8px";
+        approveBtn.textContent = "Approve hold";
+        approveBtn.addEventListener("click", () =>
+          handleHoldApproval(data.approvalId, "approve", holdSection, catalogueId));
+
+        const rejectBtn = document.createElement("button");
+        rejectBtn.type = "button";
+        rejectBtn.textContent = "Reject hold";
+        rejectBtn.addEventListener("click", () =>
+          handleHoldApproval(data.approvalId, "reject", holdSection, catalogueId));
+
+        btnContainer.append(approveBtn, rejectBtn);
+        holdSection.append(statusP, btnContainer);
+      } catch (err) {
+        if (holdStatus) {
+          holdStatus.hidden = false;
+          holdStatus.textContent = "Error: " + err.message;
+        }
+        if (requestHoldBtn) requestHoldBtn.disabled = false;
+      }
+    }
+
+    async function handleHoldApproval(approvalId, decision, holdSection, catalogueId) {
+      const buttons = holdSection.querySelectorAll("button");
+      buttons.forEach(b => (b.disabled = true));
+
+      const statusEl = holdSection.querySelector(".hold-status");
+      if (statusEl) {
+        statusEl.textContent = decision === "approve" ? "Processing simulated hold approval…" : "Rejecting hold request…";
+      }
+
+      try {
+        const response = await fetch(
+          "/holds/" + encodeURIComponent(approvalId) + "/" + decision,
+          { method: "POST" }
+        );
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Action failed.");
+        }
+
+        delete holdSection.dataset.holdRequestId;
+        holdSection.replaceChildren();
+
+        if (decision === "reject") {
+          const rejectedP = document.createElement("p");
+          rejectedP.className = "hold-status";
+          rejectedP.style.color = "var(--danger)";
+          rejectedP.style.fontWeight = "600";
+          rejectedP.style.fontSize = "0.9rem";
+          rejectedP.textContent = "Hold request rejected. No simulated hold was placed.";
+
+          const reRequestBtn = document.createElement("button");
+          reRequestBtn.type = "button";
+          reRequestBtn.style.marginTop = "6px";
+          reRequestBtn.textContent = "Request hold";
+          reRequestBtn.addEventListener("click", () =>
+            requestHold(catalogueId, holdSection, holdSection.dataset.bookTitle, holdSection.dataset.edition));
+
+          holdSection.append(rejectedP, reRequestBtn);
+        } else {
+          const verified = data.verification && data.verification.verified;
+          const statusP = document.createElement("p");
+          statusP.className = "hold-status";
+          statusP.style.color = "var(--navy)";
+          statusP.style.fontWeight = "600";
+          statusP.style.fontSize = "0.9rem";
+          statusP.textContent = `Active simulated hold: ${data.holdId} (Queue position: #${data.queuePosition})`;
+
+          const verifiedP = document.createElement("p");
+          verifiedP.style.fontSize = "0.8rem";
+          verifiedP.style.margin = "2px 0 0";
+          verifiedP.style.color = verified ? "var(--success)" : "var(--danger)";
+          verifiedP.textContent = verified
+            ? "SIMULATED HOLD VERIFIED. Simulation only. No real library account hold was placed."
+            : "Verification failed. Do not report this hold as placed.";
+
+          holdSection.append(statusP, verifiedP);
+        }
+      } catch (err) {
+        if (statusEl) {
+          statusEl.textContent = "Error: " + err.message;
+        }
+        buttons.forEach(b => (b.disabled = false));
+      }
+    }
+
+    // =========================================================================
+    // Loans & Renewal Workflow
+    // =========================================================================
+    async function loadLoans() {
+      const requestNumber = ++loansRequestNumber;
+      const loanResults = document.getElementById("loan-results");
+      const studentId = document.getElementById("issue-student-id").value.trim();
+
+      loanResults.replaceChildren();
+
+      if (!studentId) {
+        loanResults.textContent = "Enter a student ID to view current loans.";
+        return;
+      }
+
+      loanResults.textContent = "Loading loans for " + studentId + "…";
+
+      try {
+        const response = await fetch(
+          "/books?studentId=" + encodeURIComponent(studentId) + "&_=" + Date.now(),
+          { cache: "no-store" }
+        );
+        const data = await response.json();
+
+        if (requestNumber !== loansRequestNumber) return;
+        if (!response.ok) throw new Error("Loan API returned " + response.status);
+
+        const loans = data.books || [];
+
+        if (!loans.length) {
+          loanResults.innerHTML = `
+            <div class="notice-box notice-info" style="grid-column: 1 / -1; padding: 16px; text-align: center;">
+              <strong>No active loans recorded for student ${studentId}.</strong>
+              <p style="margin: 4px 0 0; color: var(--muted); font-size: 13px;">Use the Chat &amp; Search tab to search books and request simulated holds.</p>
+            </div>
+          `;
+          return;
+        }
+
+        for (const book of loans) {
+          loanResults.appendChild(makeBookCard(book, true));
+        }
+      } catch (error) {
+        if (requestNumber !== loansRequestNumber) return;
+        loanResults.innerHTML = `
+          <div class="notice-box notice-error" style="grid-column: 1 / -1; padding: 14px;">
+            <strong>Could not load loans:</strong> ${error.message}
+          </div>
+        `;
+      }
+    }
+
+    async function checkRenewal(bookId, actions) {
+      const result = actions.querySelector(".renewal-result");
+      const button = actions.querySelector("button:not(.request-renewal)");
+
+      actions.querySelectorAll(".request-renewal, .approval-action, .cancel-request").forEach(e => e.remove());
+
+      result.hidden = false;
+      result.textContent = "Checking eligibility…";
+      if (button) button.disabled = true;
+
+      try {
+        const response = await fetch("/check-renewal", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bookId })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Eligibility check failed.");
+
+        let statusText = data.eligible ? "Eligible: " + data.reason : "Blocked: " + data.reason;
+        if (data.expectedReturnDate) {
+          statusText += " Expected return date: " + data.expectedReturnDate + ".";
+        }
+        if (data.fineEstimate !== null && data.fineEstimate !== undefined && data.fineEstimate > 0) {
+          statusText += ` Estimated overdue fine: ₹${data.fineEstimate} (${data.fineEstimateDaysOverdue || 0} days overdue at ₹${data.fineEstimateRatePerDay || 5}/day - ${data.fineEstimateReason || "Synthetic simulation policy"}).`;
+        }
+
+        result.textContent = statusText;
+
+        if (data.eligible) {
+          const requestButton = document.createElement("button");
+          requestButton.type = "button";
+          requestButton.className = "request-renewal";
+          requestButton.style.marginLeft = "8px";
+          requestButton.textContent = "Request renewal";
+          requestButton.addEventListener("click", () => requestRenewal(bookId, actions));
+          actions.appendChild(requestButton);
+        }
+      } catch (error) {
+        result.textContent = "Error: " + error.message;
+      } finally {
+        if (button) button.disabled = false;
+      }
+    }
+
+    async function requestRenewal(bookId, actions) {
+      const result = actions.querySelector(".renewal-result");
+      const requestButton = actions.querySelector(".request-renewal");
+      if (requestButton) requestButton.disabled = true;
+      result.hidden = false;
+      result.textContent = "Creating approval request…";
+
+      if (!actions.dataset.renewalRequestId) {
+        actions.dataset.renewalRequestId = "req-" + bookId + "-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+      }
+      const requestId = actions.dataset.renewalRequestId;
+
+      try {
+        const response = await fetch("/request-renewal", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bookId, requestId })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          let errText = data.reason || data.error || "Request failed.";
+          if (data.fineEstimate !== null && data.fineEstimate !== undefined && data.fineEstimate > 0) {
+            errText += ` Estimated overdue fine: ₹${data.fineEstimate} (${data.fineEstimateDaysOverdue || 0} days overdue).`;
+          }
+          throw new Error(errText);
+        }
+
+        result.textContent = data.message;
+        if (requestButton) requestButton.remove();
+        actions.querySelectorAll(".undo-renewal").forEach(b => b.remove());
+
+        const approveButton = document.createElement("button");
+        approveButton.type = "button";
+        approveButton.className = "approval-action";
+        approveButton.textContent = "Approve renewal";
+        approveButton.addEventListener("click", () =>
+          handleApproval(data.approvalId, "approve", actions));
+
+        const rejectButton = document.createElement("button");
+        rejectButton.type = "button";
+        rejectButton.className = "approval-action";
+        rejectButton.style.marginLeft = "8px";
+        rejectButton.textContent = "Reject renewal";
+        rejectButton.addEventListener("click", () =>
+          handleApproval(data.approvalId, "reject", actions));
+
+        actions.append(approveButton, rejectButton);
+      } catch (error) {
+        result.textContent = "Error: " + error.message;
+        if (requestButton) requestButton.disabled = false;
+      }
+    }
+
+    async function handleApproval(approvalId, decision, actions) {
+      const result = actions.querySelector(".renewal-result");
+      const actionButtons = actions.querySelectorAll(".approval-action");
+      actionButtons.forEach(button => (button.disabled = true));
+      result.textContent = decision === "approve" ? "Processing simulated approval…" : "Rejecting request…";
+
+      try {
+        const response = await fetch(
+          "/approvals/" + encodeURIComponent(approvalId) + "/" + decision,
+          { method: "POST" }
+        );
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.reason || data.error || "Action failed.");
+
+        actions.querySelectorAll(".approval-action, .request-renewal").forEach(b => b.remove());
+        delete actions.dataset.renewalRequestId;
+
+        if (decision === "reject") {
+          result.textContent = "Renewal request rejected. No renewal occurred. You can check eligibility again.";
+        } else {
+          const verified = data.verification && data.verification.verified;
+          result.textContent = verified
+            ? `SIMULATED RENEWAL VERIFIED. Previous due date: ${data.previousDueDate}. New due date: ${data.newDueDate}.`
+            : "Verification failed. Do not report this renewal as successful.";
+
+          await loadLoans();
+        }
+      } catch (error) {
+        result.textContent = "Error: " + error.message;
+        actionButtons.forEach(button => (button.disabled = false));
+      }
+    }
+
+    async function undoRenewal(approvalId, actions, undoButton) {
+      const result = actions.querySelector(".renewal-result");
+      undoButton.disabled = true;
+      result.hidden = false;
+      result.textContent = "Undoing simulated renewal…";
+
+      try {
+        const response = await fetch(
+          "/approvals/" + encodeURIComponent(approvalId) + "/undo",
+          { method: "POST" }
+        );
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Undo failed.");
+
+        await loadLoans();
+      } catch (error) {
+        result.textContent = "Error: " + error.message;
+        undoButton.disabled = false;
+      }
+    }
+
+    // Form listeners in Loans View
+    document.getElementById("issue-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const studentId = document.getElementById("issue-student-id").value.trim();
+      const status = document.getElementById("issue-status");
+      const submitButton = document.getElementById("final-issue-submit");
+
+      if (!studentId) {
+        status.textContent = "Enter the student ID first.";
+        return;
+      }
+
+      submitButton.disabled = true;
+      status.textContent = "Checking for loans with no renewals remaining…";
+
+      try {
+        const response = await fetch("/final-submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ studentId })
+        });
+        const data = await response.json();
+
+        if (!response.ok || data.success !== true) {
+          throw new Error(data.error || "Final Submit failed.");
+        }
+
+        await loadLoans();
+        status.textContent = "Loan records remain stored.";
+      } catch (error) {
+        status.textContent = "Final Submit failed: " + error.message;
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    document.getElementById("issue-student-id").addEventListener("input", () => {
+      loadLoans();
+    });
+
+    document.getElementById("refresh-loans").addEventListener("click", () => {
+      loadLoans();
+    });
+
+    // =========================================================================
+    // Initialization
+    // =========================================================================
+    async function initialise() {
+      try {
+        const response = await fetch("/health");
+        if (!response.ok) throw new Error();
+        connectionStatus.textContent = "Service connected (Simulation + Read-Only Live OPAC)";
+      } catch {
+        connectionStatus.textContent = "Library service unavailable";
+      }
+
+      await loadLoans();
+    }
+
+    initialise();
+  </script>
+</body>
+</html>

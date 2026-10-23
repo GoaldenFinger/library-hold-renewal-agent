@@ -1,0 +1,16 @@
+{
+  "mode": "simulation",
+  "book": "Operating System Concepts",
+  "edition": "10th edition",
+  "dueDate": "2026-10-23",
+  "eligible": false,
+  "reason": "Another user is waiting for this book.",
+  "returnDate": null,
+  "returnDateStatus": "unknown_pending_return",
+  "expectedReturnDate": "2026-10-23",
+  "expectedReturnDateSource": "scheduled_due_date",
+  "expectedReturnDateType": "derived_estimate",
+  "fineEstimate": null,
+  "fineEstimateReason": "Book is not blocked due to renewal limit.",
+  "actionTaken": false
+}

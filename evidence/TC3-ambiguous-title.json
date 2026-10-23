@@ -1,0 +1,30 @@
+{
+  "mode": "simulation",
+  "query": "Database",
+  "count": 3,
+  "clarificationRequired": true,
+  "selectionRequired": false,
+  "workTitle": "Database Management Systems",
+  "distinctTitleCount": 1,
+  "message": "Found 3 matching editions of \"Database Management Systems\". Which edition would you like?",
+  "matches": [
+    {
+      "id": "CAT-001",
+      "title": "Database Management Systems",
+      "edition": "2nd edition",
+      "author": "Raghu Ramakrishnan, Johannes Gehrke"
+    },
+    {
+      "id": "CAT-002",
+      "title": "Database Management Systems",
+      "edition": "3rd edition",
+      "author": "Raghu Ramakrishnan, Johannes Gehrke"
+    },
+    {
+      "id": "CAT-003",
+      "title": "Database Management Systems",
+      "edition": "7th edition",
+      "author": "Raghu Ramakrishnan, Johannes Gehrke"
+    }
+  ]
+}

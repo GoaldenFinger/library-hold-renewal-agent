@@ -1,0 +1,64 @@
+﻿{
+    "mode":  "simulation",
+    "count":  6,
+    "events":  [
+                   {
+                       "timestamp":  "2026-10-18T05:44:33.849Z",
+                       "event":  "approval_requested",
+                       "approvalId":  "40a5f429-1483-4866-bacf-6e35d8a8bad0",
+                       "bookId":  "BOOK-001",
+                       "title":  "Database System Concepts",
+                       "actionTaken":  false
+                   },
+                   {
+                       "timestamp":  "2026-10-18T05:44:46.044Z",
+                       "event":  "simulated_renewal",
+                       "approvalId":  "40a5f429-1483-4866-bacf-6e35d8a8bad0",
+                       "bookId":  "BOOK-001",
+                       "previousDueDate":  "2026-10-19",
+                       "newDueDate":  "2026-11-02",
+                       "previousRenewalsUsed":  0,
+                       "renewalsUsed":  1,
+                       "verified":  true,
+                       "actionTaken":  false
+                   },
+                   {
+                       "timestamp":  "2026-10-18T05:44:46.044Z",
+                       "event":  "renewal_verification_passed",
+                       "approvalId":  "40a5f429-1483-4866-bacf-6e35d8a8bad0",
+                       "bookId":  "BOOK-001",
+                       "dueDateAfterReadback":  "2026-11-02",
+                       "verified":  true,
+                       "actionTaken":  false
+                   },
+                   {
+                       "timestamp":  "2026-10-18T05:46:36.242Z",
+                       "event":  "approval_requested",
+                       "approvalId":  "f79d7987-5e18-48a3-beb1-ec68729f50e1",
+                       "bookId":  "BOOK-004",
+                       "title":  "Database Management Systems",
+                       "actionTaken":  false
+                   },
+                   {
+                       "timestamp":  "2026-10-18T05:46:47.062Z",
+                       "event":  "simulated_renewal",
+                       "approvalId":  "f79d7987-5e18-48a3-beb1-ec68729f50e1",
+                       "bookId":  "BOOK-004",
+                       "previousDueDate":  "2026-10-19",
+                       "newDueDate":  "2026-11-02",
+                       "previousRenewalsUsed":  0,
+                       "renewalsUsed":  1,
+                       "verified":  true,
+                       "actionTaken":  false
+                   },
+                   {
+                       "timestamp":  "2026-10-18T05:46:47.062Z",
+                       "event":  "renewal_verification_passed",
+                       "approvalId":  "f79d7987-5e18-48a3-beb1-ec68729f50e1",
+                       "bookId":  "BOOK-004",
+                       "dueDateAfterReadback":  "2026-11-02",
+                       "verified":  true,
+                       "actionTaken":  false
+                   }
+               ]
+}

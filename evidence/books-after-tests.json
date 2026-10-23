@@ -1,0 +1,41 @@
+﻿{
+    "mode":  "simulation",
+    "books":  [
+                  {
+                      "id":  "BOOK-001",
+                      "title":  "Database System Concepts",
+                      "edition":  "7th edition",
+                      "dueDate":  "2026-11-02",
+                      "renewalsUsed":  1,
+                      "renewalLimit":  2,
+                      "holdQueue":  0
+                  },
+                  {
+                      "id":  "BOOK-002",
+                      "title":  "Database Management Systems",
+                      "edition":  "3rd edition",
+                      "dueDate":  "2026-10-19",
+                      "renewalsUsed":  1,
+                      "renewalLimit":  1,
+                      "holdQueue":  0
+                  },
+                  {
+                      "id":  "BOOK-003",
+                      "title":  "Operating System Concepts",
+                      "edition":  "10th edition",
+                      "dueDate":  "2026-10-19",
+                      "renewalsUsed":  0,
+                      "renewalLimit":  2,
+                      "holdQueue":  1
+                  },
+                  {
+                      "id":  "BOOK-004",
+                      "title":  "Database Management Systems",
+                      "edition":  "7th edition",
+                      "dueDate":  "2026-11-02",
+                      "renewalsUsed":  1,
+                      "renewalLimit":  2,
+                      "holdQueue":  0
+                  }
+              ]
+}

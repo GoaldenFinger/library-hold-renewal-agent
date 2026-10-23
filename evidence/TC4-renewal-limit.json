@@ -1,0 +1,15 @@
+{
+  "mode": "simulation",
+  "book": "Database Management Systems",
+  "edition": "3rd edition",
+  "dueDate": "2026-10-19",
+  "eligible": false,
+  "reason": "The renewal limit has been reached.",
+  "fineEstimate": 15,
+  "fineEstimateCurrency": "INR",
+  "fineEstimateDaysOverdue": 3,
+  "fineEstimateRatePerDay": 5,
+  "fineEstimateMode": "synthetic_simulation_policy",
+  "fineEstimateReason": "Synthetic simulation estimate based on policy of ₹5 per overdue day. This is not an actual library fine or real Koha fee policy.",
+  "actionTaken": false
+}
